@@ -3,8 +3,6 @@
 import { useState } from 'react'
 import { 
   Mail, 
-  Phone, 
-  MapPin, 
   Facebook, 
   Twitter, 
   Instagram, 
@@ -87,15 +85,7 @@ export default function Footer() {
             <div className="space-y-3">
               <div className="flex items-center space-x-3 text-gray-400">
                 <Mail className="w-4 h-4" />
-                <span className="text-sm">info@flium.co.jp</span>
-              </div>
-              <div className="flex items-center space-x-3 text-gray-400">
-                <Phone className="w-4 h-4" />
-                <span className="text-sm">03-1234-5678</span>
-              </div>
-              <div className="flex items-center space-x-3 text-gray-400">
-                <MapPin className="w-4 h-4" />
-                <span className="text-sm">東京都渋谷区恵比寿</span>
+                <span className="text-sm">work.ryuuto.hatsuno@gmail.com</span>
               </div>
             </div>
           </div>

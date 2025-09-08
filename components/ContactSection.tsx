@@ -5,8 +5,6 @@ import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { 
   Mail, 
-  Phone, 
-  MapPin, 
   Send,
   CheckCircle,
   AlertCircle
@@ -18,20 +16,8 @@ const contactInfo = [
   {
     icon: Mail,
     title: 'メール',
-    value: 'info@flium.co.jp',
+    value: 'work.ryuuto.hatsuno@gmail.com',
     description: '24時間以内にご返信いたします'
-  },
-  {
-    icon: Phone,
-    title: '電話',
-    value: '03-1234-5678',
-    description: '平日 9:00-18:00'
-  },
-  {
-    icon: MapPin,
-    title: '所在地',
-    value: '東京都渋谷区',
-    description: '恵比寿ガーデンプレイス'
   }
 ]
 
@@ -312,7 +298,6 @@ export default function ContactSection() {
                   連絡先情報
                 </h3>
                 <p className="text-gray-300 leading-relaxed mb-8">
-                  お急ぎの場合は、お電話にてお問い合わせください。
                   メールでのお問い合わせは24時間以内にご返信いたします。
                 </p>
               </div>
@@ -344,26 +329,6 @@ export default function ContactSection() {
                 })}
               </div>
 
-              {/* 営業時間 */}
-              <div className="bg-gradient-to-r from-primary-500/10 to-accent-500/10 backdrop-blur-sm border border-primary-500/20 rounded-2xl p-6">
-                <h4 className="text-lg font-semibold text-white mb-4">
-                  営業時間
-                </h4>
-                <div className="space-y-2 text-gray-300">
-                  <div className="flex justify-between">
-                    <span>平日</span>
-                    <span>9:00 - 18:00</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>土曜日</span>
-                    <span>10:00 - 16:00</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>日曜日・祝日</span>
-                    <span>休業</span>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
