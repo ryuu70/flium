@@ -4,10 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { 
-  Mail, 
-  Send,
-  CheckCircle,
-  AlertCircle
+  Mail
 } from 'lucide-react'
 
 gsap.registerPlugin(ScrollTrigger)
@@ -15,8 +12,8 @@ gsap.registerPlugin(ScrollTrigger)
 const contactInfo = [
   {
     icon: Mail,
-    title: 'メール',
-    value: 'work.ryuuto.hatsuno@gmail.com',
+    title: 'メールアドレス',
+    value: 'work.ryuto.hatsuno@gmail.com',
     description: '24時間以内にご返信いたします'
   }
 ]
@@ -24,17 +21,7 @@ const contactInfo = [
 export default function ContactSection() {
   const sectionRef = useRef<HTMLDivElement>(null)
   const titleRef = useRef<HTMLHeadingElement>(null)
-  const formRef = useRef<HTMLDivElement>(null)
   const infoRef = useRef<HTMLDivElement>(null)
-  
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    company: '',
-    message: ''
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -55,32 +42,14 @@ export default function ContactSection() {
         }
       )
 
-      // フォームアニメーション
-      gsap.fromTo(formRef.current,
-        { opacity: 0, x: -50 },
-        {
-          opacity: 1,
-          x: 0,
-          duration: 1,
-          delay: 0.2,
-          ease: "power2.out",
-          scrollTrigger: {
-            trigger: formRef.current,
-            start: "top 80%",
-            end: "bottom 20%",
-            toggleActions: "play none none reverse"
-          }
-        }
-      )
-
       // 連絡先情報アニメーション
       gsap.fromTo(infoRef.current,
-        { opacity: 0, x: 50 },
+        { opacity: 0, y: 50 },
         {
           opacity: 1,
-          x: 0,
+          y: 0,
           duration: 1,
-          delay: 0.4,
+          delay: 0.2,
           ease: "power2.out",
           scrollTrigger: {
             trigger: infoRef.current,
@@ -96,30 +65,6 @@ export default function ContactSection() {
     return () => ctx.revert()
   }, [])
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    setSubmitStatus('idle')
-
-    try {
-      // ここで実際のAPIコールを行う
-      await new Promise(resolve => setTimeout(resolve, 2000)) // シミュレーション
-      setSubmitStatus('success')
-      setFormData({ name: '', email: '', company: '', message: '' })
-    } catch (error) {
-      setSubmitStatus('error')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
 
   return (
     <section id="contact" ref={sectionRef} className="py-20 bg-gradient-to-b from-deep-slate-900 to-black relative overflow-hidden">
@@ -181,115 +126,7 @@ export default function ContactSection() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-          {/* お問い合わせフォーム */}
-          <div ref={formRef}>
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-3xl p-8">
-              <h3 className="text-2xl font-bold text-white mb-6">
-                メッセージを送信
-              </h3>
-              
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">
-                      お名前 *
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-300"
-                      placeholder="山田太郎"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-                      メールアドレス *
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-300"
-                      placeholder="example@company.com"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="company" className="block text-sm font-medium text-gray-300 mb-2">
-                    会社名
-                  </label>
-                  <input
-                    type="text"
-                    id="company"
-                    name="company"
-                    value={formData.company}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-300"
-                    placeholder="株式会社サンプル"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="message" className="block text-sm font-medium text-gray-300 mb-2">
-                    メッセージ *
-                  </label>
-                  <textarea
-                    id="message"
-                    name="message"
-                    value={formData.message}
-                    onChange={handleInputChange}
-                    required
-                    rows={6}
-                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-300 resize-none"
-                    placeholder="プロジェクトの詳細やご質問をお聞かせください"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full bg-gradient-to-r from-primary-500 to-accent-500 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:scale-105 transition-all duration-300 shadow-2xl hover:shadow-primary-500/25 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center space-x-2"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>送信中...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-5 h-5" />
-                      <span>メッセージを送信</span>
-                    </>
-                  )}
-                </button>
-
-                {/* 送信ステータス */}
-                {submitStatus === 'success' && (
-                  <div className="flex items-center space-x-2 text-green-400 bg-green-400/10 border border-green-400/20 rounded-xl p-4">
-                    <CheckCircle className="w-5 h-5" />
-                    <span>メッセージが正常に送信されました。ありがとうございます。</span>
-                  </div>
-                )}
-
-                {submitStatus === 'error' && (
-                  <div className="flex items-center space-x-2 text-red-400 bg-red-400/10 border border-red-400/20 rounded-xl p-4">
-                    <AlertCircle className="w-5 h-5" />
-                    <span>送信に失敗しました。もう一度お試しください。</span>
-                  </div>
-                )}
-              </form>
-            </div>
-          </div>
-
+        <div className="max-w-4xl mx-auto">
           {/* 連絡先情報 */}
           <div ref={infoRef}>
             <div className="space-y-8">
@@ -338,14 +175,6 @@ export default function ContactSection() {
                   <div className="flex justify-between">
                     <span>平日</span>
                     <span>9:00 - 18:00</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>土曜日</span>
-                    <span>10:00 - 16:00</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>日曜日・祝日</span>
-                    <span>休業</span>
                   </div>
                 </div>
               </div>
