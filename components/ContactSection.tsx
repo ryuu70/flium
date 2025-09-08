@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { 
@@ -42,23 +42,23 @@ export default function ContactSection() {
         }
       )
 
-      // 連絡先情報アニメーション
-      gsap.fromTo(infoRef.current,
-        { opacity: 0, y: 50 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 1,
-          delay: 0.2,
-          ease: "power2.out",
-          scrollTrigger: {
-            trigger: infoRef.current,
-            start: "top 80%",
-            end: "bottom 20%",
-            toggleActions: "play none none reverse"
-          }
-        }
-      )
+       // 連絡先情報アニメーション
+       gsap.fromTo(infoRef.current,
+         { opacity: 0, y: 50 },
+         {
+           opacity: 1,
+           y: 0,
+           duration: 1,
+           delay: 0.2,
+           ease: "power2.out",
+           scrollTrigger: {
+             trigger: infoRef.current,
+             start: "top 80%",
+             end: "bottom 20%",
+             toggleActions: "play none none reverse"
+           }
+         }
+       )
 
     }, sectionRef)
 
@@ -126,9 +126,9 @@ export default function ContactSection() {
           </p>
         </div>
 
-        <div className="max-w-4xl mx-auto">
-          {/* 連絡先情報 */}
-          <div ref={infoRef}>
+         <div className="max-w-4xl mx-auto">
+           {/* 連絡先情報 */}
+           <div ref={infoRef}>
             <div className="space-y-8">
               <div>
                 <h3 className="text-2xl font-bold text-white mb-6">

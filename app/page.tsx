@@ -767,7 +767,7 @@ export default function Home() {
           </p>
           <p className="hero-description" style={{ 
             fontSize: '1rem', 
-            opacity: 0.8, 
+            opacity: 0.8,
             marginBottom: '2rem',
             color: '#F0F3F5'
           }}>
@@ -2501,7 +2501,6 @@ export default function Home() {
               maxWidth: '1000px',
               width: '100%'
             }}>
-
               {/* 連絡先情報 */}
               <div className="contact-info" style={{ 
                 padding: '4rem 3rem',
