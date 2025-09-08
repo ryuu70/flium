@@ -329,6 +329,26 @@ export default function ContactSection() {
                 })}
               </div>
 
+              {/* 営業時間 */}
+              <div className="bg-gradient-to-r from-primary-500/10 to-accent-500/10 backdrop-blur-sm border border-primary-500/20 rounded-2xl p-6">
+                <h4 className="text-lg font-semibold text-white mb-4">
+                  営業時間
+                </h4>
+                <div className="space-y-2 text-gray-300">
+                  <div className="flex justify-between">
+                    <span>平日</span>
+                    <span>9:00 - 18:00</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>土曜日</span>
+                    <span>10:00 - 16:00</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>日曜日・祝日</span>
+                    <span>休業</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
