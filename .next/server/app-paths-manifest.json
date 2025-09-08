@@ -1,5 +1,9 @@
 {
-  "/page": "app/page.js",
+  "/_not-found": "app/_not-found.js",
+  "/api/blog/init/route": "app/api/blog/init/route.js",
+  "/api/blog/categories/route": "app/api/blog/categories/route.js",
+  "/api/blog/posts/slug/[slug]/route": "app/api/blog/posts/slug/[slug]/route.js",
+  "/api/blog/posts/[id]/route": "app/api/blog/posts/[id]/route.js",
   "/api/blog/posts/route": "app/api/blog/posts/route.js",
-  "/api/blog/categories/route": "app/api/blog/categories/route.js"
+  "/page": "app/page.js"
 }
