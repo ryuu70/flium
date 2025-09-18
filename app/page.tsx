@@ -1,8 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useEffect } from 'react'
-import BlogSection from '../components/BlogSection'
+import { useEffect, useState, useRef } from 'react'
 
 // 3Dシーンを動的インポート（SSRを無効化）
 const Scene3D = dynamic(() => import('@/components/Scene3D'), {
@@ -38,2547 +37,2576 @@ const Scene3D = dynamic(() => import('@/components/Scene3D'), {
 })
 
 export default function Home() {
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollY = window.scrollY
-      const maxScroll = document.documentElement.scrollHeight - window.innerHeight
-      const scrollProgress = Math.min(scrollY / maxScroll, 1)
+  const [showMainContent, setShowMainContent] = useState(false)
+  const [isTransitioning, setIsTransitioning] = useState(false)
+  const [scrollY, setScrollY] = useState(0)
+  const [isVisible, setIsVisible] = useState<{ [key: string]: boolean }>({})
+  const sectionRefs = useRef<{ [key: string]: HTMLElement | null }>({})
 
-      // 理念セクションは常に表示されるため、スクロール制御は不要
+  // スクロールアニメーション用のIntersection Observer
+  useEffect(() => {
+    if (!showMainContent) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(prev => ({ ...prev, [entry.target.id]: true }))
+          }
+        })
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    )
+
+    Object.values(sectionRefs.current).forEach((ref) => {
+      if (ref) observer.observe(ref)
+    })
+
+    return () => observer.disconnect()
+  }, [showMainContent])
+
+  // スクロール位置の追跡
+  useEffect(() => {
+    if (!showMainContent) return
+
+    const handleScroll = () => {
+      setScrollY(window.scrollY)
     }
 
     window.addEventListener('scroll', handleScroll)
-    handleScroll() // 初期実行
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [showMainContent])
+
+  useEffect(() => {
+    const handleUserInteraction = () => {
+      if (!showMainContent && !isTransitioning) {
+        setIsTransitioning(true)
+        setTimeout(() => {
+          setShowMainContent(true)
+          setIsTransitioning(false)
+        }, 1000)
+      }
+    }
+
+    const handleScroll = (e: Event) => {
+      e.preventDefault()
+      if (!showMainContent) {
+        handleUserInteraction()
+      }
+    }
+
+    const handleTouchStart = () => {
+      if (!showMainContent) {
+        handleUserInteraction()
+      }
+    }
+
+    const handleClick = () => {
+      if (!showMainContent) {
+        handleUserInteraction()
+      }
+    }
+
+    if (!showMainContent) {
+      window.addEventListener('scroll', handleScroll, { passive: false })
+      window.addEventListener('touchstart', handleTouchStart)
+      window.addEventListener('click', handleClick)
+    }
 
     return () => {
       window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('touchstart', handleTouchStart)
+      window.removeEventListener('click', handleClick)
     }
-  }, [])
+  }, [showMainContent, isTransitioning])
 
-  return (
-    <>
-      <style jsx>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        @keyframes slideInLeft {
-          from {
-            opacity: 0;
-            transform: translateX(-50px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        
-        @keyframes slideInRight {
-          from {
-            opacity: 0;
-            transform: translateX(50px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        
-        @keyframes expandWidth {
-          from {
-            width: 0;
-          }
-          to {
-            width: 100px;
-          }
-        }
-        
-        @keyframes shimmer {
-          0% {
-            transform: translateX(-100%);
-          }
-          100% {
-            transform: translateX(100%);
-          }
-        }
-        
-        @keyframes spin {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
-
-        /* モバイル対応のメディアクエリ */
-        @media (max-width: 768px) {
-          .section-title {
-            font-size: 1.8rem !important;
-            letter-spacing: 0.05em !important;
-          }
-          
-          .section-subtitle {
-            font-size: 1rem !important;
-            margin-bottom: 1.5rem !important;
-          }
-          
-          .section-quote {
-            font-size: 1.4rem !important;
-            padding-left: 1.5rem !important;
-            margin-bottom: 2rem !important;
-          }
-          
-          .section-description {
-            font-size: 1rem !important;
-            line-height: 1.6 !important;
-          }
-          
-          .values-card {
-            padding: 2rem !important;
-          }
-          
-          .values-title {
-            font-size: 1.4rem !important;
-            margin-bottom: 1rem !important;
-          }
-          
-          .values-subtitle {
-            font-size: 0.9rem !important;
-            margin-bottom: 1.5rem !important;
-          }
-          
-          .values-description {
-            font-size: 1.1rem !important;
-            line-height: 1.6 !important;
-          }
-          
-          /* About Us セクション用 */
-          .about-title {
-            font-size: 3rem !important;
-            margin-bottom: 1.5rem !important;
-          }
-          
-          .about-subtitle {
-            font-size: 2rem !important;
-            margin-bottom: 1rem !important;
-          }
-          
-          .about-description {
-            font-size: 1rem !important;
-            line-height: 1.6 !important;
-          }
-          
-          .about-card {
-            padding: 3rem 2rem !important;
-            margin-bottom: 3rem !important;
-          }
-          
-          .about-belief {
-            padding: 1.5rem !important;
-            margin-top: 1.5rem !important;
-          }
-          
-          .about-belief h4 {
-            font-size: 1.2rem !important;
-            margin-bottom: 0.8rem !important;
-          }
-          
-          .about-belief p {
-            font-size: 0.9rem !important;
-            line-height: 1.6 !important;
-          }
-          
-          .founder-name {
-            font-size: 1.8rem !important;
-            margin-bottom: 0.8rem !important;
-          }
-          
-          .founder-description {
-            font-size: 0.9rem !important;
-            line-height: 1.6 !important;
-          }
-          
-          .founder-quote {
-            padding: 1.5rem !important;
-            margin-top: 1.5rem !important;
-          }
-          
-          .founder-quote p {
-            font-size: 0.9rem !important;
-            line-height: 1.6 !important;
-          }
-          
-          .cta-button {
-            padding: 0.8rem 2rem !important;
-            font-size: 1rem !important;
-          }
-          
-          /* Services セクション用 */
-          .services-grid {
-            grid-template-columns: 1fr !important;
-            gap: 2rem !important;
-          }
-          
-          .service-card {
-            padding: 3rem 2rem !important;
-          }
-          
-          .service-title {
-            font-size: 2rem !important;
-            margin-bottom: 1rem !important;
-          }
-          
-          .service-description {
-            font-size: 1rem !important;
-            line-height: 1.6 !important;
-          }
-          
-          /* Portfolio セクション用 */
-          .portfolio-grid {
-            grid-template-columns: 1fr !important;
-            gap: 2rem !important;
-          }
-          
-          .portfolio-card {
-            padding: 3rem 2rem !important;
-          }
-          
-          .portfolio-title {
-            font-size: 1.8rem !important;
-            margin-bottom: 1rem !important;
-          }
-          
-          .portfolio-description {
-            font-size: 1rem !important;
-            line-height: 1.6 !important;
-          }
-          
-          .portfolio-tech {
-            font-size: 0.8rem !important;
-            padding: 0.3rem 0.6rem !important;
-          }
-          
-          /* Technology セクション用 */
-          .tech-grid {
-            grid-template-columns: 1fr !important;
-            gap: 2rem !important;
-          }
-          
-          .tech-card {
-            padding: 2.5rem 2rem !important;
-          }
-          
-          .tech-title {
-            font-size: 1.5rem !important;
-            margin-bottom: 1rem !important;
-          }
-          
-          .tech-tag {
-            font-size: 0.8rem !important;
-            padding: 0.4rem 0.8rem !important;
-          }
-          
-          .tech-methodology {
-            padding: 3rem 2rem !important;
-          }
-          
-          .tech-methodology h3 {
-            font-size: 2rem !important;
-            margin-bottom: 1.5rem !important;
-          }
-          
-          .tech-methodology p {
-            font-size: 1rem !important;
-            line-height: 1.6 !important;
-          }
-          
-          .tech-methodology-tag {
-            font-size: 0.8rem !important;
-            padding: 0.4rem 1rem !important;
-          }
-          
-          /* Contact セクション用 */
-          .contact-grid {
-            grid-template-columns: 1fr !important;
-            gap: 3rem !important;
-          }
-          
-          .contact-form {
-            padding: 3rem 2rem !important;
-          }
-          
-          .contact-info {
-            padding: 3rem 2rem !important;
-          }
-          
-          .contact-title {
-            font-size: 2rem !important;
-            margin-bottom: 1.5rem !important;
-          }
-          
-          .contact-label {
-            font-size: 0.9rem !important;
-            margin-bottom: 0.4rem !important;
-          }
-          
-          .contact-input {
-            padding: 0.8rem !important;
-            font-size: 0.9rem !important;
-          }
-          
-          .contact-textarea {
-            padding: 0.8rem !important;
-            font-size: 0.9rem !important;
-          }
-          
-          .contact-submit {
-            padding: 0.8rem 2rem !important;
-            font-size: 1rem !important;
-          }
-          
-          .contact-info-title {
-            font-size: 1.8rem !important;
-            margin-bottom: 1.5rem !important;
-          }
-          
-          .contact-info-item h4 {
-            font-size: 1rem !important;
-            margin-bottom: 0.4rem !important;
-          }
-          
-          .contact-info-item p {
-            font-size: 0.9rem !important;
-            line-height: 1.6 !important;
-          }
-          
-          /* Blog セクション用 */
-          .blog-grid {
-            grid-template-columns: 1fr !important;
-            gap: 2rem !important;
-          }
-          
-          .blog-card {
-            padding: 2.5rem 2rem !important;
-          }
-          
-          .blog-category {
-            font-size: 0.7rem !important;
-            padding: 0.3rem 0.6rem !important;
-            margin-bottom: 1rem !important;
-          }
-          
-          .blog-title {
-            font-size: 1.6rem !important;
-            margin-bottom: 0.8rem !important;
-          }
-          
-          .blog-description {
-            font-size: 0.9rem !important;
-            line-height: 1.6 !important;
-            margin-bottom: 1rem !important;
-          }
-          
-          .blog-meta {
-            font-size: 0.8rem !important;
-          }
-          
-          .blog-button {
-            padding: 0.8rem 2rem !important;
-            font-size: 1rem !important;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .section-title {
-            font-size: 1.5rem !important;
-          }
-          
-          .section-quote {
-            font-size: 1.2rem !important;
-            padding-left: 1rem !important;
-          }
-          
-          .section-description {
-            font-size: 0.9rem !important;
-          }
-          
-          .values-card {
-            padding: 1.5rem !important;
-          }
-          
-          .values-title {
-            font-size: 1.2rem !important;
-          }
-          
-          .values-description {
-            font-size: 1rem !important;
-          }
-          
-          /* About Us セクション用（480px以下） */
-          .about-title {
-            font-size: 2.5rem !important;
-            margin-bottom: 1rem !important;
-          }
-          
-          .about-subtitle {
-            font-size: 1.8rem !important;
-            margin-bottom: 0.8rem !important;
-          }
-          
-          .about-description {
-            font-size: 0.9rem !important;
-            line-height: 1.5 !important;
-          }
-          
-          .about-card {
-            padding: 2rem 1.5rem !important;
-            margin-bottom: 2rem !important;
-          }
-          
-          .about-belief {
-            padding: 1rem !important;
-            margin-top: 1rem !important;
-          }
-          
-          .about-belief h4 {
-            font-size: 1.1rem !important;
-            margin-bottom: 0.6rem !important;
-          }
-          
-          .about-belief p {
-            font-size: 0.8rem !important;
-            line-height: 1.5 !important;
-          }
-          
-          .founder-name {
-            font-size: 1.5rem !important;
-            margin-bottom: 0.6rem !important;
-          }
-          
-          .founder-description {
-            font-size: 0.8rem !important;
-            line-height: 1.5 !important;
-          }
-          
-          .founder-quote {
-            padding: 1rem !important;
-            margin-top: 1rem !important;
-          }
-          
-          .founder-quote p {
-            font-size: 0.8rem !important;
-            line-height: 1.5 !important;
-          }
-          
-          .cta-button {
-            padding: 0.7rem 1.5rem !important;
-            font-size: 0.9rem !important;
-          }
-          
-          /* Services セクション用（480px以下） */
-          .services-grid {
-            gap: 1.5rem !important;
-          }
-          
-          .service-card {
-            padding: 2rem 1.5rem !important;
-          }
-          
-          .service-title {
-            font-size: 1.6rem !important;
-            margin-bottom: 0.8rem !important;
-          }
-          
-          .service-description {
-            font-size: 0.9rem !important;
-            line-height: 1.5 !important;
-          }
-          
-          /* Portfolio セクション用（480px以下） */
-          .portfolio-grid {
-            gap: 1.5rem !important;
-          }
-          
-          .portfolio-card {
-            padding: 2rem 1.5rem !important;
-          }
-          
-          .portfolio-title {
-            font-size: 1.5rem !important;
-            margin-bottom: 0.8rem !important;
-          }
-          
-          .portfolio-description {
-            font-size: 0.9rem !important;
-            line-height: 1.5 !important;
-          }
-          
-          .portfolio-tech {
-            font-size: 0.7rem !important;
-            padding: 0.2rem 0.5rem !important;
-          }
-          
-          /* Technology セクション用（480px以下） */
-          .tech-grid {
-            gap: 1.5rem !important;
-          }
-          
-          .tech-card {
-            padding: 2rem 1.5rem !important;
-          }
-          
-          .tech-title {
-            font-size: 1.3rem !important;
-            margin-bottom: 0.8rem !important;
-          }
-          
-          .tech-tag {
-            font-size: 0.7rem !important;
-            padding: 0.3rem 0.6rem !important;
-          }
-          
-          .tech-methodology {
-            padding: 2rem 1.5rem !important;
-          }
-          
-          .tech-methodology h3 {
-            font-size: 1.6rem !important;
-            margin-bottom: 1rem !important;
-          }
-          
-          .tech-methodology p {
-            font-size: 0.9rem !important;
-            line-height: 1.5 !important;
-          }
-          
-          .tech-methodology-tag {
-            font-size: 0.7rem !important;
-            padding: 0.3rem 0.8rem !important;
-          }
-          
-          /* Contact セクション用（480px以下） */
-          .contact-grid {
-            gap: 2rem !important;
-          }
-          
-          .contact-form {
-            padding: 2rem 1.5rem !important;
-          }
-          
-          .contact-info {
-            padding: 2rem 1.5rem !important;
-          }
-          
-          .contact-title {
-            font-size: 1.6rem !important;
-            margin-bottom: 1rem !important;
-          }
-          
-          .contact-label {
-            font-size: 0.8rem !important;
-            margin-bottom: 0.3rem !important;
-          }
-          
-          .contact-input {
-            padding: 0.7rem !important;
-            font-size: 0.8rem !important;
-          }
-          
-          .contact-textarea {
-            padding: 0.7rem !important;
-            font-size: 0.8rem !important;
-          }
-          
-          .contact-submit {
-            padding: 0.7rem 1.5rem !important;
-            font-size: 0.9rem !important;
-          }
-          
-          .contact-info-title {
-            font-size: 1.5rem !important;
-            margin-bottom: 1rem !important;
-          }
-          
-          .contact-info-item h4 {
-            font-size: 0.9rem !important;
-            margin-bottom: 0.3rem !important;
-          }
-          
-          .contact-info-item p {
-            font-size: 0.8rem !important;
-            line-height: 1.5 !important;
-          }
-          
-          /* Blog セクション用（480px以下） */
-          .blog-grid {
-            gap: 1.5rem !important;
-          }
-          
-          .blog-card {
-            padding: 2rem 1.5rem !important;
-          }
-          
-          .blog-category {
-            font-size: 0.6rem !important;
-            padding: 0.2rem 0.5rem !important;
-            margin-bottom: 0.8rem !important;
-          }
-          
-          .blog-title {
-            font-size: 1.4rem !important;
-            margin-bottom: 0.6rem !important;
-          }
-          
-          .blog-description {
-            font-size: 0.8rem !important;
-            line-height: 1.5 !important;
-            margin-bottom: 0.8rem !important;
-          }
-          
-          .blog-meta {
-            font-size: 0.7rem !important;
-          }
-          
-          .blog-button {
-            padding: 0.7rem 1.5rem !important;
-            font-size: 0.9rem !important;
-          }
-        }
-
-        /* モバイル用のレイアウト調整 */
-        @media (max-width: 768px) {
-          main {
-            padding: 0 0.5rem !important;
-          }
-          
-          .section-container {
-            padding: 2rem 1rem !important;
-          }
-          
-          .values-container {
-            padding: 1rem !important;
-          }
-          
-          .hero-title {
-            font-size: 2.5rem !important;
-            margin-bottom: 0.5rem !important;
-          }
-          
-          .hero-subtitle {
-            font-size: 1.2rem !important;
-            margin-bottom: 1rem !important;
-          }
-          
-          .hero-description {
-            font-size: 0.9rem !important;
-            margin-bottom: 1rem !important;
-          }
-          
-          .hero-floating-text {
-            font-size: 1.8rem !important;
-            bottom: 20% !important;
-          }
-        }
-
-        @media (max-width: 480px) {
-          main {
-            padding: 0 0.25rem !important;
-          }
-          
-          .section-container {
-            padding: 1rem 0.5rem !important;
-          }
-          
-          .values-container {
-            padding: 0.5rem !important;
-          }
-          
-          .hero-title {
-            font-size: 2rem !important;
-            margin-bottom: 0.5rem !important;
-          }
-          
-          .hero-subtitle {
-            font-size: 1rem !important;
-            margin-bottom: 0.8rem !important;
-          }
-          
-          .hero-description {
-            font-size: 0.8rem !important;
-            margin-bottom: 0.8rem !important;
-          }
-          
-          .hero-floating-text {
-            font-size: 1.4rem !important;
-            bottom: 15% !important;
-          }
-          
-          .hero-container {
-            padding: 1rem !important;
-            min-height: 80vh !important;
-          }
-        }
-      `}</style>
-      <main style={{ 
-        minHeight: '100vh', 
-        position: 'relative',
-        color: '#F0F3F5',
-        textAlign: 'center',
-        padding: '0 1rem'
-      }}>
-      {/* 3D背景シーン */}
-      <Scene3D />
-      
-      {/* メインコンテンツ */}
-      <div className="hero-container" style={{ 
-        position: 'relative',
-        zIndex: 10,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        background: 'rgba(13, 27, 42, 0.3)'
-      }}>
-        <div>
-          <h1 className="hero-title" style={{ 
-            fontSize: '4rem', 
-            marginBottom: '1rem', 
-            fontWeight: 'bold',
-            color: '#F0F3F5',
-            textShadow: '0 0 20px rgba(0, 245, 212, 0.3)'
-          }}>
-            Flium
-          </h1>
-          <p className="hero-subtitle" style={{ 
-            fontSize: '1.5rem', 
-            marginBottom: '2rem',
-            color: '#F0F3F5',
-            textShadow: '0 0 10px rgba(0, 245, 212, 0.2)'
-          }}>
-            デジタルを構成する、新しい元素。
-          </p>
-          <p className="hero-description" style={{ 
-            fontSize: '1rem', 
-            opacity: 0.8,
-            marginBottom: '2rem',
-            color: '#F0F3F5'
-          }}>
-            The Element of Digital Flow.
-          </p>
-          {/* 3D空間に浮かぶテキスト */}
-          <div className="hero-floating-text" style={{
-            position: 'absolute',
-            bottom: '30%',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            fontSize: '2.5rem',
-            fontWeight: 'bold',
-            color: '#F0F3F5',
-            textShadow: '0 0 30px rgba(0, 245, 212, 0.6)',
-            zIndex: 20,
-            pointerEvents: 'none',
-            letterSpacing: '0.1em'
-          }}>
-            美しい流れは、価値になる。
-          </div>
-          
-        </div>
-      </div>
-      
-      {/* スクロール可能なコンテンツ */}
-      <div className="section-container" style={{ 
-        position: 'relative',
-        zIndex: 10,
-        background: 'rgba(0,0,0,0.8)',
-        padding: '4rem 2rem',
-        marginTop: '100vh',
-        minHeight: '300vh' // 十分なスクロール領域を確保
-      }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          {/* 理念セクション */}
-          <section style={{ 
-            marginBottom: '8rem',
+  if (showMainContent) {
+    return (
+      <>
+        <style jsx>{`
+          @keyframes fadeInUp {
+            from {
+              opacity: 0;
+              transform: translateY(30px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          
+          @keyframes float {
+            0%, 100% {
+              transform: translateY(0px);
+            }
+            50% {
+              transform: translateY(-20px);
+            }
+          }
+          
+          @keyframes pulse {
+            0%, 100% {
+              opacity: 0.7;
+            }
+            50% {
+              opacity: 1;
+            }
+          }
+          
+          @keyframes spin {
+            from {
+              transform: rotate(0deg);
+            }
+            to {
+              transform: rotate(360deg);
+            }
+          }
+        `}</style>
+        <div style={{ background: '#ffffff', minHeight: '100vh' }}>
+        {/* ヘッダー */}
+        <header style={{
+          background: scrollY > 50 ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(10px)',
+          padding: '1rem 2rem',
+          borderBottom: '1px solid rgba(229, 231, 235, 0.3)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 100,
+          boxShadow: scrollY > 50 ? '0 4px 20px rgba(0, 0, 0, 0.1)' : '0 1px 3px rgba(0, 0, 0, 0.05)',
+          transition: 'all 0.3s ease'
+        }}>
+          <nav style={{
+            maxWidth: '1200px',
+            margin: '0 auto',
             display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '100vh',
-            padding: '4rem 2rem'
+            justifyContent: 'space-between',
+            alignItems: 'center'
           }}>
-            <div style={{ 
-              textAlign: 'center', 
-              marginBottom: '6rem',
-              maxWidth: '800px'
+            <div style={{
+              fontSize: '1.8rem', 
+              fontWeight: 'bold',
+              background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              cursor: 'pointer',
+              transition: 'transform 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.05)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)'
             }}>
-              <h2 style={{ 
-                fontSize: '5rem', 
-                fontWeight: '200',
-                letterSpacing: '0.2em',
-                margin: 0,
-                color: '#F0F3F5',
-                animation: 'fadeInUp 1s ease-out',
-                textShadow: '0 0 60px rgba(240, 243, 245, 0.8), 0 0 100px rgba(0, 245, 212, 0.3)',
-                filter: 'drop-shadow(0 0 20px rgba(240, 243, 245, 0.5))'
-              }}>
-                Philosophy
-              </h2>
-              <div style={{
-                width: '150px',
-                height: '3px',
-                background: 'linear-gradient(90deg, transparent, #00F5D4, #8E94F2, transparent)',
-                margin: '3rem auto 0',
-                borderRadius: '2px',
-                animation: 'expandWidth 2s ease-out 0.5s both'
-              }}></div>
+              Flium
             </div>
-            
-            {/* Mission */}
-            <div 
-              id="mission-section"
-              style={{ 
-                marginBottom: '6rem',
-                padding: '6rem 4rem',
-                background: 'rgba(0, 245, 212, 0.03)',
-                borderRadius: '32px',
-                border: '1px solid rgba(0, 245, 212, 0.2)',
-                backdropFilter: 'blur(40px)',
-              position: 'relative',
-              overflow: 'hidden',
-                animation: 'fadeInUp 1s ease-out 0.2s both',
-                maxWidth: '900px',
-                width: '100%',
-                boxShadow: '0 20px 60px rgba(0, 245, 212, 0.1)'
-              }}
-            >
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '2px',
-                background: 'linear-gradient(90deg, transparent, #00F5D4, transparent)',
-                animation: 'shimmer 4s ease-in-out infinite'
-              }}></div>
-              
-              {/* Mission テキスト */}
-              <div 
-                id="mission-chaos-text"
-                style={{ 
-                  position: 'relative',
-                  textAlign: 'center',
-                  opacity: 1,
-                  zIndex: 10
-                }}
-              >
-                <div style={{
-                  display: 'inline-block',
-                  padding: '0.5rem 1.5rem',
-                  background: 'rgba(0, 245, 212, 0.1)',
-                  borderRadius: '50px',
-                  marginBottom: '2rem',
-                  border: '1px solid rgba(0, 245, 212, 0.3)'
-                }}>
-                  <span style={{
-                    fontSize: '0.9rem',
-                color: '#00F5D4',
+            <div style={{
+              display: 'flex',
+              gap: '2rem',
+              alignItems: 'center',
+              flexWrap: 'wrap'
+            }}>
+              {['Fliumとは', 'サービス', '導入事例', '運営者情報', 'ブログ', 'お問い合わせ'].map((item, index) => (
+                <a 
+                  key={item}
+                  href={`#${item === 'Fliumとは' ? 'flium-about' : 
+                          item === 'サービス' ? 'services' :
+                          item === '導入事例' ? 'case-studies' :
+                          item === '運営者情報' ? 'company-info' :
+                          item === 'ブログ' ? 'blog' : 'contact'}`}
+                  style={{
+                    color: '#6b7280',
+                    textDecoration: 'none',
                     fontWeight: '500',
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase'
-                  }}>
-                    Mission
-                  </span>
-                </div>
-                
-                <h3 style={{ 
-                  fontSize: '3.5rem', 
-                  color: '#F0F3F5',
-                marginBottom: '2rem',
-                  fontWeight: '200',
-                letterSpacing: '0.05em',
-                  lineHeight: '1.2'
-              }}>
-                  流れを設計し、実装する
-              </h3>
-                
-                <p style={{ 
-                  fontSize: '1.3rem', 
-                  color: '#8E94F2',
-                  lineHeight: '1.8',
-                  maxWidth: '700px',
-                  margin: '0 auto',
-                  letterSpacing: '0.02em',
-                  fontWeight: '300'
-                }}>
-                  私たちは、見た目の美しさだけでなく、その裏側にあるロジック、データ、ユーザー体験のすべてを滑らかに繋ぐ「流れ」をデザインします。
-                </p>
-              </div>
-            </div>
-
-            {/* Vision */}
-            <div 
-              id="vision-section"
-              style={{ 
-                marginBottom: '6rem',
-                padding: '6rem 4rem',
-                background: 'rgba(142, 148, 242, 0.03)',
-                borderRadius: '32px',
-                border: '1px solid rgba(142, 148, 242, 0.2)',
-                backdropFilter: 'blur(40px)',
-                position: 'relative',
-                overflow: 'hidden',
-                animation: 'fadeInUp 1s ease-out 0.4s both',
-                maxWidth: '900px',
-                width: '100%',
-                boxShadow: '0 20px 60px rgba(142, 148, 242, 0.1)'
-              }}
-            >
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '2px',
-                background: 'linear-gradient(90deg, transparent, #8E94F2, transparent)',
-                animation: 'shimmer 4s ease-in-out infinite 1s'
-              }}></div>
-              
-              {/* Visionテキスト */}
-              <div 
-                id="vision-text"
-                style={{ 
-                  position: 'relative',
-                  textAlign: 'center',
-                  opacity: 1,
-                  zIndex: 10
-                }}
-              >
-                <div style={{
-                  display: 'inline-block',
-                  padding: '0.5rem 1.5rem',
-                  background: 'rgba(142, 148, 242, 0.1)',
-                  borderRadius: '50px',
-                  marginBottom: '2rem',
-                  border: '1px solid rgba(142, 148, 242, 0.3)'
-                }}>
-                  <span style={{
                     fontSize: '0.9rem',
-                color: '#8E94F2',
-                fontWeight: '500',
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase'
-              }}>
-                    Vision
-                  </span>
-              </div>
-                
-                <h3 style={{ 
-                  fontSize: '3.5rem', 
-                color: '#F0F3F5',
-                  marginBottom: '2rem',
-                  fontWeight: '200',
-                  letterSpacing: '0.05em',
-                  lineHeight: '1.2'
-                }}>
-                  テクノロジーを、水や光のように
-                </h3>
-                
-                <p style={{ 
-                  fontSize: '1.3rem', 
-                  color: '#8E94F2',
-                  lineHeight: '1.8',
-                  maxWidth: '700px',
-                  margin: '0 auto',
-                  letterSpacing: '0.02em',
-                  fontWeight: '300'
-                }}>
-                  私たちが目指すのは、テクノロジーの存在を意識させないほどに自然で、直感的で、美しいデジタル体験が当たり前になる世界です。
-                </p>
-              </div>
+                    padding: '0.5rem 1rem',
+                    borderRadius: '8px',
+                    transition: 'all 0.3s ease',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = '#3b82f6'
+                    e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)'
+                    e.currentTarget.style.transform = 'translateY(-2px)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = '#6b7280'
+                    e.currentTarget.style.background = 'transparent'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                  }}
+                >
+                  {item}
+                </a>
+              ))}
             </div>
+          </nav>
+        </header>
 
-            {/* Values */}
-            <div 
-              id="values-section"
-              className="values-container"
-              style={{ 
-                padding: '6rem 4rem',
-                background: 'rgba(240, 243, 245, 0.03)',
-                borderRadius: '32px',
-                border: '1px solid rgba(240, 243, 245, 0.2)',
-                backdropFilter: 'blur(40px)',
-                position: 'relative',
-                overflow: 'hidden',
-                animation: 'fadeInUp 1s ease-out 0.6s both',
-                maxWidth: '900px',
-                width: '100%',
-                boxShadow: '0 20px 60px rgba(240, 243, 245, 0.1)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center'
-              }}
-            >
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '2px',
-                background: 'linear-gradient(90deg, transparent, #F0F3F5, transparent)',
-                animation: 'shimmer 4s ease-in-out infinite 2s'
-              }}></div>
-              
-              {/* Values メインタイトル */}
-              <div style={{ 
-                textAlign: 'center',
-                marginBottom: '4rem'
-              }}>
-                <div style={{
-                  display: 'inline-block',
-                  padding: '0.5rem 1.5rem',
-                  background: 'rgba(240, 243, 245, 0.1)',
-                  borderRadius: '50px',
-                  marginBottom: '2rem',
-                  border: '1px solid rgba(240, 243, 245, 0.3)'
-                }}>
-                  <span style={{
-                    fontSize: '0.9rem',
-                    color: '#F0F3F5',
-                    fontWeight: '500',
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase'
-                  }}>
-                    Values
-                  </span>
-                </div>
-                
-                <h3 style={{ 
-                  fontSize: '3.5rem', 
-                  color: '#F0F3F5',
-                  marginBottom: '2rem',
-                  fontWeight: '200',
-                  letterSpacing: '0.05em',
-                  lineHeight: '1.2'
-                }}>
-                  私たちが約束する行動指針
-                </h3>
-              </div>
-              
-              {/* 本質と洗練 */}
-              <div 
-                id="values-essence-text"
-                style={{ 
-                  position: 'relative',
-                  textAlign: 'center',
-                  opacity: 1,
-                  zIndex: 10,
-                  maxWidth: '600px',
-                  margin: '0 auto 4rem auto'
-                }}
-              >
-                
-                <div style={{ 
-                  padding: '3rem 2rem',
-                  background: 'rgba(0, 245, 212, 0.05)',
-                  borderRadius: '24px',
-                  border: '1px solid rgba(0, 245, 212, 0.2)',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}>
-                  <h4 style={{ 
-                    fontSize: '2.2rem', 
-                    color: '#00F5D4',
-                    marginBottom: '1rem',
-                    fontWeight: '300',
-                    letterSpacing: '0.05em'
-                  }}>
-                    本質と洗練
-                  </h4>
-              <p style={{ 
-                fontSize: '1.2rem', 
-                    color: '#8E94F2',
-                lineHeight: '1.8',
-                    fontWeight: '300',
-                    letterSpacing: '0.02em'
-              }}>
-                    私たちは、過剰に飾ることをしません。常に物事の「本質」を見極め、不要なものを削ぎ落とし、磨き上げます。
-              </p>
-                </div>
-            </div>
-
-              {/* 動的な調和 */}
-              <div 
-                id="values-harmony-text"
-                style={{ 
-                  position: 'relative',
-                  textAlign: 'center',
-                  opacity: 1,
-                  zIndex: 10,
-                  maxWidth: '600px',
-                  margin: '0 auto 4rem auto'
-                }}
-              >
-            <div style={{ 
-                  padding: '3rem 2rem',
-                  background: 'rgba(142, 148, 242, 0.05)',
+        {/* メインコンテンツ */}
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '4rem 2rem' }}>
+          {/* ヒーローセクション（コーポレートサイト） */}
+          <section 
+            id="home" 
+            ref={(el) => { sectionRefs.current['home'] = el }}
+            style={{
+              padding: '8rem 0',
+              textAlign: 'center',
+              background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
               borderRadius: '24px',
-                  border: '1px solid rgba(142, 148, 242, 0.2)',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}>
-                  <h4 style={{ 
-                    fontSize: '2.2rem', 
-                    color: '#8E94F2',
-                    marginBottom: '1rem',
-                    fontWeight: '300',
-                    letterSpacing: '0.05em'
-                  }}>
-                    動的な調和
-                  </h4>
-                  <p style={{ 
-                    fontSize: '1.2rem', 
-                    color: '#8E94F2',
-                    lineHeight: '1.8',
-                    fontWeight: '300',
-                    letterSpacing: '0.02em'
-                  }}>
-                    私たちは、静的な完璧さだけを追求しません。ユーザーの動き、データの流れ、時代の変化と相互作用し、生き物のように滑らかに動き続けます。
-                  </p>
-                </div>
-              </div>
-
-              {/* 大胆な探究 */}
-              <div 
-                id="values-exploration-text"
-                style={{ 
-                  position: 'relative',
-                  textAlign: 'center',
-                  opacity: 1,
-                  zIndex: 10,
-                  maxWidth: '600px',
-                  margin: '0 auto 4rem auto'
-                }}
-              >
-                <div style={{ 
-                  padding: '3rem 2rem',
-                  background: 'rgba(240, 243, 245, 0.05)',
-                  borderRadius: '24px',
-                  border: '1px solid rgba(240, 243, 245, 0.2)',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}>
-                  <h4 style={{ 
-                    fontSize: '2.2rem', 
-                    color: '#F0F3F5',
-                    marginBottom: '1rem',
-                    fontWeight: '300',
-                    letterSpacing: '0.05em'
-                  }}>
-                    大胆な探究
-                  </h4>
-                  <p style={{ 
-                    fontSize: '1.2rem', 
-                    color: '#8E94F2',
-                    lineHeight: '1.8',
-                    fontWeight: '300',
-                    letterSpacing: '0.02em'
-                  }}>
-                    私たちは、未知の領域にこそ最高の流れがあると信じ、探究を恐れません。新しい技術や表現を常に実験し、リスクを恐れず挑戦します。
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* About Us セクション */}
-          <section style={{ 
-            marginBottom: '8rem',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '100vh',
-            padding: '4rem 2rem'
-          }}>
-            <div style={{ 
-              textAlign: 'center', 
-              marginBottom: '6rem',
-              maxWidth: '800px'
-            }}>
-              <h2 style={{ 
-                fontSize: '5rem', 
-                fontWeight: '200',
-                letterSpacing: '0.2em',
-                margin: 0,
-                color: '#F0F3F5',
-                animation: 'fadeInUp 1s ease-out',
-                textShadow: '0 0 60px rgba(240, 243, 245, 0.8), 0 0 100px rgba(0, 245, 212, 0.3)',
-                filter: 'drop-shadow(0 0 20px rgba(240, 243, 245, 0.5))'
-              }}>
-                About Us
-              </h2>
-              <div style={{
-                width: '150px',
-                height: '3px',
-                background: 'linear-gradient(90deg, transparent, #00F5D4, #8E94F2, transparent)',
-                margin: '3rem auto 0',
-                borderRadius: '2px',
-                animation: 'expandWidth 2s ease-out 0.5s both'
-              }}></div>
-            </div>
-
-            {/* 会社概要 */}
-            <div className="about-card" style={{ 
-              marginBottom: '6rem',
-              padding: '6rem 4rem',
-              background: 'rgba(142, 148, 242, 0.03)',
-              borderRadius: '32px',
-              border: '1px solid rgba(142, 148, 242, 0.2)',
-              backdropFilter: 'blur(40px)',
+              margin: '2rem 0',
               position: 'relative',
               overflow: 'hidden',
-              animation: 'fadeInUp 1s ease-out 0.2s both',
-              maxWidth: '1000px',
-              width: '100%',
-              boxShadow: '0 20px 60px rgba(142, 148, 242, 0.1)'
-            }}>
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '2px',
-                background: 'linear-gradient(90deg, transparent, #8E94F2, transparent)',
-                animation: 'shimmer 4s ease-in-out infinite'
-              }}></div>
-              
-              <div style={{ textAlign: 'center' }}>
-                <div style={{
-                  display: 'inline-block',
-                  padding: '0.5rem 1.5rem',
-                  background: 'rgba(142, 148, 242, 0.1)',
-                  borderRadius: '50px',
-                  marginBottom: '2rem',
-                  border: '1px solid rgba(142, 148, 242, 0.3)'
-                }}>
-                  <span style={{
-                    fontSize: '0.9rem',
-                color: '#8E94F2',
-                    fontWeight: '500',
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase'
-                  }}>
-                    Company
-                  </span>
-                </div>
-                
-                <h3 className="about-title" style={{ 
-                  fontSize: '3.5rem', 
-                  color: '#F0F3F5',
+              opacity: isVisible['home'] ? 1 : 0,
+              transform: isVisible['home'] ? 'translateY(0)' : 'translateY(50px)',
+              transition: 'all 0.8s ease'
+            }}
+          >
+            {/* 背景装飾 */}
+            <div style={{
+              position: 'absolute',
+              top: '-50%',
+              left: '-50%',
+              width: '200%',
+              height: '200%',
+              background: 'radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%)',
+              animation: 'float 6s ease-in-out infinite'
+            }} />
+            <div style={{
+              position: 'absolute',
+              top: '20%',
+              right: '-10%',
+              width: '300px',
+              height: '300px',
+              background: 'radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 70%)',
+              animation: 'float 8s ease-in-out infinite reverse'
+            }} />
+            
+            <div style={{ position: 'relative', zIndex: 2 }}>
+              <h1 style={{
+                fontSize: '4.5rem',
+                fontWeight: 'bold',
+                background: 'linear-gradient(135deg, #1e293b, #3b82f6, #1d4ed8)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
                 marginBottom: '2rem',
-                  fontWeight: '200',
-                letterSpacing: '0.05em',
-                  lineHeight: '1.2'
+                lineHeight: '1.1',
+                textShadow: '0 4px 20px rgba(59, 130, 246, 0.3)',
+                animation: isVisible['home'] ? 'fadeInUp 1s ease 0.2s both' : 'none'
               }}>
-                  デジタルに、生命の流れを。
-              </h3>
-                
-                <p className="about-description" style={{ 
-                  fontSize: '1.3rem', 
-                  color: '#8E94F2',
-                  lineHeight: '1.8',
-                  maxWidth: '800px',
-                  margin: '0 auto 2rem auto',
-                  letterSpacing: '0.02em',
-                  fontWeight: '300'
-                }}>
-                  Fliumは、デジタル体験の根源を創り出すデザイン＆テクノロジースタジオです。
-                </p>
-                
-                <p className="about-description" style={{ 
-                fontSize: '1.1rem',
-                  color: '#8E94F2',
-                  lineHeight: '1.8',
-                  maxWidth: '800px',
-                  margin: '0 auto 2rem auto',
-                  letterSpacing: '0.02em',
-                  fontWeight: '300'
-                }}>
-                  社名は「Flow（流れ）」と、ラテン語で「元素」を意味する「-ium」を組み合わせた造語。<br/>
-                  「優れたデジタル体験の核心には、必ず美しく機能的な『流れ』が存在する」という信念のもと、私たちはその根源的な要素を設計し、実装します。
-                </p>
-                
-                <div className="about-belief" style={{
-                  padding: '2rem',
-                  background: 'rgba(0, 0, 0, 0.2)',
-                  borderRadius: '20px',
-                  marginTop: '2rem',
-                  border: '1px solid rgba(142, 148, 242, 0.1)'
-                }}>
-                  <h4 style={{ 
-                    fontSize: '1.5rem', 
-                    color: '#F0F3F5',
-                    marginBottom: '1rem',
-                    fontWeight: '300',
-                    letterSpacing: '0.05em'
-                  }}>
-                    私たちが信じること
-                  </h4>
-                  <p style={{ 
-                    fontSize: '1.1rem', 
-                    color: '#8E94F2',
-                    lineHeight: '1.8',
-                    margin: '0 auto 1.5rem auto',
-                    letterSpacing: '0.02em',
-                    fontWeight: '300'
-                  }}>
-                    テクノロジーは、複雑である必要はありません。
-                  </p>
-                  <p style={{ 
-                    fontSize: '1rem', 
-                    color: '#8E94F2',
-                    lineHeight: '1.8',
-                    margin: '0 auto',
-                    letterSpacing: '0.02em',
-                    fontWeight: '300'
-                  }}>
-                    私たちは、その存在を意識させないほどに自然で、直感的で、美しいデジタル体験こそが、人の心を動かし、ビジネスの価値を最大化すると信じています。
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* 代表者紹介 */}
-            <div className="about-card" style={{ 
-              marginBottom: '6rem',
-              padding: '6rem 4rem',
-              background: 'rgba(0, 245, 212, 0.03)',
-              borderRadius: '32px',
-              border: '1px solid rgba(0, 245, 212, 0.2)',
-              backdropFilter: 'blur(40px)',
-              position: 'relative',
-              overflow: 'hidden',
-              animation: 'fadeInUp 1s ease-out 0.4s both',
-              maxWidth: '1000px',
-              width: '100%',
-              boxShadow: '0 20px 60px rgba(0, 245, 212, 0.1)'
-            }}>
+                Flium
+              </h1>
+              <p style={{
+                fontSize: '1.5rem',
+                color: '#64748b',
+                marginBottom: '1rem',
+                maxWidth: '700px',
+                margin: '0 auto 1rem auto',
+                fontWeight: '300',
+                animation: isVisible['home'] ? 'fadeInUp 1s ease 0.4s both' : 'none'
+              }}>
+                デジタルを構成する、新しい元素。
+              </p>
+              <p style={{
+                fontSize: '1.2rem',
+                color: '#94a3b8',
+                marginBottom: '3rem',
+                maxWidth: '600px',
+                margin: '0 auto 3rem auto',
+                animation: isVisible['home'] ? 'fadeInUp 1s ease 0.6s both' : 'none'
+              }}>
+                流れを設計し、実装する。
+              </p>
               <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '2px',
-                background: 'linear-gradient(90deg, transparent, #00F5D4, transparent)',
-                animation: 'shimmer 4s ease-in-out infinite 1s'
-              }}></div>
-              
-              <div style={{ textAlign: 'center' }}>
-                <div style={{
-                  display: 'inline-block',
-                  padding: '0.5rem 1.5rem',
-                  background: 'rgba(0, 245, 212, 0.1)',
-                  borderRadius: '50px',
-                  marginBottom: '2rem',
-                  border: '1px solid rgba(0, 245, 212, 0.3)'
-                }}>
-                  <span style={{
-                    fontSize: '0.9rem',
-                color: '#00F5D4',
-                fontWeight: '500',
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase'
+                display: 'flex',
+                gap: '1.5rem',
+                justifyContent: 'center',
+                flexWrap: 'wrap',
+                animation: isVisible['home'] ? 'fadeInUp 1s ease 0.8s both' : 'none'
               }}>
-                    Founder
-                  </span>
-              </div>
-                
-                <h3 className="about-subtitle" style={{ 
-                  fontSize: '3.5rem', 
-                color: '#F0F3F5',
-                  marginBottom: '2rem',
-                  fontWeight: '200',
-                  letterSpacing: '0.05em',
-                  lineHeight: '1.2'
-                }}>
-                  代表 / Founder
-                </h3>
-                
-                <h4 className="founder-name" style={{ 
-                  fontSize: '2.2rem', 
-                  color: '#00F5D4',
-                  marginBottom: '1rem',
-                  fontWeight: '300',
-                  letterSpacing: '0.05em'
-                }}>
-                  初野 流斗 / Ryuto Hatsuno
-                </h4>
-                <p className="founder-description" style={{ 
-                  fontSize: '1rem', 
-                  color: '#8E94F2',
-                  lineHeight: '1.8',
-                  maxWidth: '800px',
-                  margin: '0 auto 2rem auto',
-                  letterSpacing: '0.02em',
-                  fontWeight: '300'
-                }}>
-                  これまで個人事業主として、数々のプロジェクトでUI/UXデザインからAI実装、3Dアニメーションまで、領域を横断した価値創造を追求してきました。
-                </p>
-                
-                <div className="founder-quote" style={{
-                  padding: '2rem',
-                  background: 'rgba(0, 0, 0, 0.2)',
-                  borderRadius: '20px',
-                  marginTop: '2rem',
-                  border: '1px solid rgba(0, 245, 212, 0.1)'
-                }}>
-              <p style={{ 
-                    fontSize: '1rem', 
-                    color: '#8E94F2',
-                lineHeight: '1.8',
-                    margin: '0 auto',
-                    letterSpacing: '0.02em',
-                    fontWeight: '300',
-                    fontStyle: 'italic'
-                  }}>
-                    「Flium」は、その活動の中で見出した「優れた体験の核心には、必ず美しい流れが存在する」という確信を、より純粋な形で社会に還元するために立ち上げた、私の理念そのものです。
-                  </p>
-                  <p style={{ 
-                    fontSize: '1rem', 
-                    color: '#8E94F2',
-                    lineHeight: '1.8',
-                    margin: '1.5rem auto 0 auto',
-                    letterSpacing: '0.02em',
-                    fontWeight: '300',
-                    fontStyle: 'italic'
-                  }}>
-                    一つひとつのプロジェクトに、自身の知見と情熱のすべてを注ぎ込みます。
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* 未来へのメッセージ */}
-            <div className="about-card" style={{ 
-              marginBottom: '6rem',
-              padding: '6rem 4rem',
-              background: 'rgba(240, 243, 245, 0.03)',
-              borderRadius: '32px',
-              border: '1px solid rgba(240, 243, 245, 0.2)',
-              backdropFilter: 'blur(40px)',
-              position: 'relative',
-              overflow: 'hidden',
-              animation: 'fadeInUp 1s ease-out 0.6s both',
-              maxWidth: '1000px',
-              width: '100%',
-              boxShadow: '0 20px 60px rgba(240, 243, 245, 0.1)'
-            }}>
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '2px',
-                background: 'linear-gradient(90deg, transparent, #F0F3F5, transparent)',
-                animation: 'shimmer 4s ease-in-out infinite 2s'
-              }}></div>
-              
-              <div style={{ textAlign: 'center' }}>
-              <h3 style={{ 
-                  fontSize: '3.5rem', 
-                color: '#F0F3F5',
-                  marginBottom: '2rem',
-                  fontWeight: '200',
-                letterSpacing: '0.05em',
-                  lineHeight: '1.2'
-              }}>
-                  未来の流れを、共に創る
-              </h3>
-                
-              <p style={{ 
-                  fontSize: '1.3rem', 
-                  color: '#8E94F2',
-                  lineHeight: '1.8',
-                  maxWidth: '800px',
-                  margin: '0 auto 2rem auto',
-                  letterSpacing: '0.02em',
-                  fontWeight: '300'
-                }}>
-                  あなたのビジネスが持つ可能性を、まだ誰も見たことのないデジタル体験へと昇華させてみませんか。
-                </p>
-                
-                <p style={{ 
-                fontSize: '1.1rem',
-                color: '#8E94F2',
-                  lineHeight: '1.8',
-                  maxWidth: '800px',
-                  margin: '0 auto 3rem auto',
-                  letterSpacing: '0.02em',
-                  fontWeight: '300'
-                }}>
-                  Fliumは、挑戦的で未来志向のプロジェクトを共に創り上げるパートナーを探しています。<br/>
-                  まずはお気軽にご相談ください。
-                </p>
-                
-                <button className="cta-button" style={{
-                  padding: '1rem 3rem',
-                  background: 'linear-gradient(135deg, #00F5D4, #8E94F2)',
-                  border: 'none',
-                  borderRadius: '50px',
-                  color: '#000',
-                  fontSize: '1.1rem',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  textDecoration: 'none',
-                  display: 'inline-block'
-                }}>
-                  [→ Contact]
+                <button 
+                  style={{
+                    background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                    color: '#ffffff',
+                    padding: '1.2rem 2.5rem',
+                    border: 'none',
+                    borderRadius: '12px',
+                    fontSize: '1.1rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    boxShadow: '0 8px 25px rgba(59, 130, 246, 0.3)',
+                    transition: 'all 0.3s ease',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-3px)'
+                    e.currentTarget.style.boxShadow = '0 12px 35px rgba(59, 130, 246, 0.4)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)'
+                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(59, 130, 246, 0.3)'
+                  }}
+                >
+                  お問い合わせ
+                </button>
+                <button 
+                  style={{
+                    background: 'transparent',
+                    color: '#3b82f6',
+                    padding: '1.2rem 2.5rem',
+                    border: '2px solid #3b82f6',
+                    borderRadius: '12px',
+                    fontSize: '1.1rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#3b82f6'
+                    e.currentTarget.style.color = '#ffffff'
+                    e.currentTarget.style.transform = 'translateY(-3px)'
+                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(59, 130, 246, 0.3)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent'
+                    e.currentTarget.style.color = '#3b82f6'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}
+                >
+                  サービスを見る
                 </button>
               </div>
             </div>
           </section>
 
-          {/* Services セクション */}
-          <section style={{ 
-            marginBottom: '8rem',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '100vh',
-            padding: '4rem 2rem'
-          }}>
-              <div style={{ 
-              textAlign: 'center', 
-              marginBottom: '6rem',
-              maxWidth: '800px'
-            }}>
-              <h2 style={{ 
-                fontSize: '5rem', 
-                fontWeight: '200',
-                letterSpacing: '0.2em',
-                margin: 0,
-                color: '#F0F3F5',
-                animation: 'fadeInUp 1s ease-out',
-                textShadow: '0 0 60px rgba(240, 243, 245, 0.8), 0 0 100px rgba(0, 245, 212, 0.3)',
-                filter: 'drop-shadow(0 0 20px rgba(240, 243, 245, 0.5))'
-              }}>
-                Services
-              </h2>
-                <div style={{ 
-                width: '150px',
-                height: '3px',
-                background: 'linear-gradient(90deg, transparent, #00F5D4, #8E94F2, transparent)',
-                margin: '3rem auto 0',
-                borderRadius: '2px',
-                animation: 'expandWidth 2s ease-out 0.5s both'
-              }}></div>
-            </div>
-
-            {/* サービス一覧 */}
-            <div className="services-grid" style={{ 
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-              gap: '3rem',
-              maxWidth: '1200px',
-              width: '100%'
-            }}>
-              {/* Webデザイン */}
-              <div className="service-card" style={{ 
-                padding: '4rem 3rem',
-                background: 'rgba(0, 245, 212, 0.03)',
-                borderRadius: '24px',
-                border: '1px solid rgba(0, 245, 212, 0.2)',
-                backdropFilter: 'blur(40px)',
-                  position: 'relative',
-                  overflow: 'hidden',
-                animation: 'fadeInUp 1s ease-out 0.2s both',
-                boxShadow: '0 20px 60px rgba(0, 245, 212, 0.1)'
-                }}>
-                  <div style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                  height: '2px',
-                    background: 'linear-gradient(90deg, transparent, #00F5D4, transparent)',
-                    animation: 'shimmer 4s ease-in-out infinite'
-                  }}></div>
-                
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{
-                    display: 'inline-block',
-                    padding: '0.5rem 1.5rem',
-                    background: 'rgba(0, 245, 212, 0.1)',
-                    borderRadius: '50px',
-                    marginBottom: '2rem',
-                    border: '1px solid rgba(0, 245, 212, 0.3)'
-                  }}>
-                    <span style={{
-                      fontSize: '0.9rem',
-                    color: '#00F5D4',
-                      fontWeight: '500',
-                      letterSpacing: '0.1em',
-                      textTransform: 'uppercase'
-                    }}>
-                      Design
-                    </span>
-                  </div>
-                  
-                  <h3 className="service-title" style={{ 
-                    fontSize: '2.5rem', 
-                    color: '#F0F3F5',
-                    marginBottom: '1.5rem',
-                    fontWeight: '200',
-                    letterSpacing: '0.05em',
-                    lineHeight: '1.2'
-                  }}>
-                    Webデザイン
-                  </h3>
-                  
-                  <p className="service-description" style={{ 
-                    fontSize: '1.1rem', 
-                    color: '#8E94F2',
-                lineHeight: '1.8',
-                    fontWeight: '300',
-                    letterSpacing: '0.02em'
-              }}>
-                    ユーザー中心のデザイン思考に基づき、美しく使いやすいWebサイトを創造します。
-              </p>
-                </div>
-            </div>
-
-              {/* 開発 */}
-              <div className="service-card" style={{ 
-                padding: '4rem 3rem',
-                background: 'rgba(142, 148, 242, 0.03)',
-                borderRadius: '24px',
-                border: '1px solid rgba(142, 148, 242, 0.2)',
-                backdropFilter: 'blur(40px)',
-                position: 'relative',
-                overflow: 'hidden',
-                animation: 'fadeInUp 1s ease-out 0.4s both',
-                boxShadow: '0 20px 60px rgba(142, 148, 242, 0.1)'
-              }}>
-                  <div style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: '2px',
-                  background: 'linear-gradient(90deg, transparent, #8E94F2, transparent)',
-                  animation: 'shimmer 4s ease-in-out infinite 1s'
-                }}></div>
-                
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{
-                    display: 'inline-block',
-                    padding: '0.5rem 1.5rem',
-                    background: 'rgba(142, 148, 242, 0.1)',
-                    borderRadius: '50px',
-                    marginBottom: '2rem',
-                    border: '1px solid rgba(142, 148, 242, 0.3)'
-                  }}>
-                    <span style={{
-                    fontSize: '0.9rem',
-                    color: '#8E94F2',
-                    fontWeight: '500',
-                      letterSpacing: '0.1em',
-                      textTransform: 'uppercase'
-                  }}>
-                      Development
-                    </span>
-                  </div>
-                  
-                  <h3 className="service-title" style={{ 
-                    fontSize: '2.5rem', 
-                    color: '#F0F3F5',
-                    marginBottom: '1.5rem',
-                    fontWeight: '200',
-                    letterSpacing: '0.05em',
-                    lineHeight: '1.2'
-                  }}>
-                    システム開発
-                  </h3>
-                  
-                  <p className="service-description" style={{ 
-                    fontSize: '1.1rem', 
-                    color: '#8E94F2',
-                    lineHeight: '1.8',
-                    fontWeight: '300',
-                    letterSpacing: '0.02em'
-                  }}>
-                    最新技術を活用し、スケーラブルで保守性の高いシステムを構築します。
-                  </p>
-                </div>
-              </div>
-
-              {/* コンサルティング */}
-              <div className="service-card" style={{ 
-                padding: '4rem 3rem',
-                background: 'rgba(240, 243, 245, 0.03)',
+          {/* Fliumとは セクション */}
+          <section 
+            id="flium-about" 
+            ref={(el) => { sectionRefs.current['flium-about'] = el }}
+            style={{
+              padding: '8rem 0',
+              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
               borderRadius: '24px',
-                border: '1px solid rgba(240, 243, 245, 0.2)',
-                backdropFilter: 'blur(40px)',
-              position: 'relative',
-              overflow: 'hidden',
-                animation: 'fadeInUp 1s ease-out 0.6s both',
-                boxShadow: '0 20px 60px rgba(240, 243, 245, 0.1)'
-            }}>
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                  height: '2px',
-                background: 'linear-gradient(90deg, transparent, #F0F3F5, transparent)',
-                  animation: 'shimmer 4s ease-in-out infinite 2s'
-              }}></div>
-                
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{
-                    display: 'inline-block',
-                    padding: '0.5rem 1.5rem',
-                    background: 'rgba(240, 243, 245, 0.1)',
-                    borderRadius: '50px',
-                    marginBottom: '2rem',
-                    border: '1px solid rgba(240, 243, 245, 0.3)'
-                  }}>
-                    <span style={{
-                      fontSize: '0.9rem',
-                    color: '#F0F3F5',
-                      fontWeight: '500',
-                      letterSpacing: '0.1em',
-                      textTransform: 'uppercase'
-                    }}>
-                      Consulting
-                    </span>
-                  </div>
-                  
-                  <h3 className="service-title" style={{ 
-                    fontSize: '2.5rem', 
-                    color: '#F0F3F5',
-                    marginBottom: '1.5rem',
-                    fontWeight: '200',
-                    letterSpacing: '0.05em',
-                    lineHeight: '1.2'
-                  }}>
-                    デジタル戦略
-                  </h3>
-                  
-                  <p className="service-description" style={{ 
-                    fontSize: '1.1rem', 
-                    color: '#8E94F2',
-                    lineHeight: '1.8',
-                    fontWeight: '300',
-                    letterSpacing: '0.02em'
-                  }}>
-                    ビジネス目標に合わせたデジタル戦略の立案と実行をサポートします。
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Portfolio セクション */}
-          <section style={{ 
-            marginBottom: '8rem',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '100vh',
-            padding: '4rem 2rem'
-          }}>
-                <div style={{ 
-              textAlign: 'center', 
-              marginBottom: '6rem',
-              maxWidth: '800px'
-            }}>
+              margin: '2rem 0',
+              opacity: isVisible['flium-about'] ? 1 : 0,
+              transform: isVisible['flium-about'] ? 'translateY(0)' : 'translateY(50px)',
+              transition: 'all 0.8s ease'
+            }}
+          >
+            <div style={{ textAlign: 'center', marginBottom: '5rem' }}>
               <h2 style={{ 
-                fontSize: '5rem', 
-                fontWeight: '200',
-                letterSpacing: '0.2em',
-                margin: 0,
-                color: '#F0F3F5',
-                animation: 'fadeInUp 1s ease-out',
-                textShadow: '0 0 60px rgba(240, 243, 245, 0.8), 0 0 100px rgba(0, 245, 212, 0.3)',
-                filter: 'drop-shadow(0 0 20px rgba(240, 243, 245, 0.5))'
+                fontSize: '3rem',
+                fontWeight: 'bold',
+                background: 'linear-gradient(135deg, #1e293b, #3b82f6)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                marginBottom: '1.5rem',
+                animation: isVisible['flium-about'] ? 'fadeInUp 1s ease 0.2s both' : 'none'
               }}>
-                Portfolio
+                Fliumとは
               </h2>
               <div style={{
-                width: '150px',
-                height: '3px',
-                background: 'linear-gradient(90deg, transparent, #00F5D4, #8E94F2, transparent)',
-                margin: '3rem auto 0',
+                width: '80px',
+                height: '4px',
+                background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                margin: '0 auto',
                 borderRadius: '2px',
-                animation: 'expandWidth 2s ease-out 0.5s both'
+                animation: isVisible['flium-about'] ? 'fadeInUp 1s ease 0.4s both' : 'none'
               }}></div>
             </div>
-
-            {/* プロジェクト一覧 */}
-            <div className="portfolio-grid" style={{ 
+            
+            <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
               gap: '3rem',
-              maxWidth: '1200px',
-              width: '100%'
+              marginBottom: '4rem'
             }}>
-              {/* プロジェクト1 */}
-              <div className="portfolio-card" style={{ 
-                padding: '4rem 3rem',
-                background: 'rgba(0, 245, 212, 0.03)',
-                borderRadius: '24px',
-                border: '1px solid rgba(0, 245, 212, 0.2)',
-                backdropFilter: 'blur(40px)',
+              <div style={{
+                padding: '3rem',
+                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                borderRadius: '20px',
+                border: '1px solid rgba(229, 231, 235, 0.5)',
+                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.3s ease',
                 position: 'relative',
                 overflow: 'hidden',
-                animation: 'fadeInUp 1s ease-out 0.2s both',
-                boxShadow: '0 20px 60px rgba(0, 245, 212, 0.1)'
-              }}>
+                animation: isVisible['flium-about'] ? 'fadeInUp 1s ease 0.6s both' : 'none'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-10px)'
+                e.currentTarget.style.boxShadow = '0 20px 60px rgba(0, 0, 0, 0.15)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.1)'
+              }}
+              >
                 <div style={{
                   position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: '2px',
-                  background: 'linear-gradient(90deg, transparent, #00F5D4, transparent)',
-                  animation: 'shimmer 4s ease-in-out infinite'
-                }}></div>
-                
-                <div style={{ textAlign: 'center' }}>
-                  <h3 className="portfolio-title" style={{ 
-                    fontSize: '2.2rem', 
-                    color: '#F0F3F5',
-                    marginBottom: '1rem',
-                    fontWeight: '200',
-                    letterSpacing: '0.05em',
-                    lineHeight: '1.2'
-                  }}>
-                    Eコマースプラットフォーム
-                  </h3>
-                  
-                  <p className="portfolio-description" style={{ 
-                    fontSize: '1rem', 
-                    color: '#8E94F2',
-                    lineHeight: '1.8',
-                    fontWeight: '300',
-                    letterSpacing: '0.02em',
-                    marginBottom: '2rem'
-                  }}>
-                    大規模なECサイトのリニューアルプロジェクト。ユーザビリティとパフォーマンスを大幅に改善。
-                  </p>
-                  
-                  <div style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '0.5rem',
-                    justifyContent: 'center'
-                  }}>
-                    <span className="portfolio-tech" style={{
-                      padding: '0.3rem 0.8rem',
-                      background: 'rgba(0, 245, 212, 0.1)',
-                  borderRadius: '20px',
-                      fontSize: '0.8rem',
-                      color: '#00F5D4',
-                      border: '1px solid rgba(0, 245, 212, 0.3)'
-                    }}>
-                      React
-                    </span>
-                    <span className="portfolio-tech" style={{
-                      padding: '0.3rem 0.8rem',
-                      background: 'rgba(0, 245, 212, 0.1)',
-                      borderRadius: '20px',
-                      fontSize: '0.8rem',
-                      color: '#00F5D4',
-                      border: '1px solid rgba(0, 245, 212, 0.3)'
-                    }}>
-                      Node.js
-                    </span>
-                    <span className="portfolio-tech" style={{
-                      padding: '0.3rem 0.8rem',
-                      background: 'rgba(0, 245, 212, 0.1)',
-                      borderRadius: '20px',
-                      fontSize: '0.8rem',
-                      color: '#00F5D4',
-                      border: '1px solid rgba(0, 245, 212, 0.3)'
-                    }}>
-                      AWS
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* プロジェクト2 */}
-              <div className="portfolio-card" style={{ 
-                padding: '4rem 3rem',
-                background: 'rgba(142, 148, 242, 0.03)',
-                borderRadius: '24px',
-                border: '1px solid rgba(142, 148, 242, 0.2)',
-                backdropFilter: 'blur(40px)',
-                  position: 'relative',
-                  overflow: 'hidden',
-                animation: 'fadeInUp 1s ease-out 0.4s both',
-                boxShadow: '0 20px 60px rgba(142, 148, 242, 0.1)'
+                  top: '0',
+                  left: '0',
+                  width: '100%',
+                  height: '4px',
+                  background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)'
+                }} />
+                <div style={{
+                  width: '60px',
+                  height: '60px',
+                  background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                  borderRadius: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '1.5rem',
+                  color: 'white',
+                  fontSize: '1.5rem',
+                  fontWeight: 'bold'
                 }}>
-                  <div style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                  height: '2px',
-                    background: 'linear-gradient(90deg, transparent, #8E94F2, transparent)',
-                    animation: 'shimmer 4s ease-in-out infinite 1s'
-                  }}></div>
-                
-                <div style={{ textAlign: 'center' }}>
-                  <h3 style={{ 
-                    fontSize: '2.2rem', 
-                    color: '#F0F3F5',
-                    marginBottom: '1rem',
-                    fontWeight: '200',
-                letterSpacing: '0.05em',
-                    lineHeight: '1.2'
-              }}>
-                    企業向けダッシュボード
-              </h3>
-                  
-                  <p style={{ 
-                    fontSize: '1rem', 
-                    color: '#8E94F2',
-                    lineHeight: '1.8',
-                    fontWeight: '300',
-                    letterSpacing: '0.02em',
-                    marginBottom: '2rem'
-                  }}>
-                    リアルタイムデータ可視化とレポート機能を持つ管理システムの開発。
-                  </p>
-                  
-                  <div style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '0.5rem',
-                    justifyContent: 'center'
-                  }}>
-                    <span style={{
-                      padding: '0.3rem 0.8rem',
-                      background: 'rgba(142, 148, 242, 0.1)',
-                      borderRadius: '20px',
-                      fontSize: '0.8rem',
-                color: '#8E94F2',
-                      border: '1px solid rgba(142, 148, 242, 0.3)'
-                    }}>
-                      Vue.js
-                    </span>
-                    <span style={{
-                      padding: '0.3rem 0.8rem',
-                      background: 'rgba(142, 148, 242, 0.1)',
-                      borderRadius: '20px',
-                      fontSize: '0.8rem',
-                      color: '#8E94F2',
-                      border: '1px solid rgba(142, 148, 242, 0.3)'
-                    }}>
-                      Python
-                    </span>
-                    <span style={{
-                      padding: '0.3rem 0.8rem',
-                      background: 'rgba(142, 148, 242, 0.1)',
-                      borderRadius: '20px',
-                      fontSize: '0.8rem',
-                      color: '#8E94F2',
-                      border: '1px solid rgba(142, 148, 242, 0.3)'
-                    }}>
-                      D3.js
-                    </span>
-                  </div>
+                  🏢
                 </div>
+                <h3 style={{
+                  fontSize: '1.8rem', 
+                  fontWeight: 'bold',
+                  color: '#1f2937',
+                  marginBottom: '1.5rem'
+                }}>
+                  会社概要
+                </h3>
+                <p style={{ 
+                  color: '#64748b',
+                  lineHeight: '1.7',
+                  marginBottom: '1.5rem',
+                  fontSize: '1.1rem'
+                }}>
+                  Fliumは、WEBデザインやWEB開発を行うクリエイティブスタジオです。
+                </p>
+                <ul style={{ 
+                  color: '#64748b',
+                  lineHeight: '1.7',
+                  paddingLeft: '1.5rem',
+                  fontSize: '1rem'
+                }}>
+                  <li>設立：2025年</li>
+                  <li>所在地：東京</li>
+                  <li>事業内容：Webデザイン、システム開発、広告運用</li>
+                </ul>
               </div>
-
-              {/* プロジェクト3 */}
-              <div className="portfolio-card" style={{ 
-                padding: '4rem 3rem',
-                background: 'rgba(240, 243, 245, 0.03)',
-                borderRadius: '24px',
-                border: '1px solid rgba(240, 243, 245, 0.2)',
-                backdropFilter: 'blur(40px)',
+              
+              <div style={{
+                padding: '3rem',
+                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                borderRadius: '20px',
+                border: '1px solid rgba(229, 231, 235, 0.5)',
+                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.3s ease',
                 position: 'relative',
                 overflow: 'hidden',
-                animation: 'fadeInUp 1s ease-out 0.6s both',
-                boxShadow: '0 20px 60px rgba(240, 243, 245, 0.1)'
-              }}>
+                animation: isVisible['flium-about'] ? 'fadeInUp 1s ease 0.8s both' : 'none'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-10px)'
+                e.currentTarget.style.boxShadow = '0 20px 60px rgba(0, 0, 0, 0.15)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.1)'
+              }}
+              >
                 <div style={{
                   position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: '2px',
-                  background: 'linear-gradient(90deg, transparent, #F0F3F5, transparent)',
-                  animation: 'shimmer 4s ease-in-out infinite 2s'
-                }}></div>
-                
-                <div style={{ textAlign: 'center' }}>
-                  <h3 style={{ 
-                    fontSize: '2.2rem', 
-                    color: '#F0F3F5',
-                    marginBottom: '1rem',
-                    fontWeight: '200',
-                    letterSpacing: '0.05em',
-                    lineHeight: '1.2'
-                  }}>
-                    モバイルアプリ
-                  </h3>
-                  
-                  <p style={{ 
-                    fontSize: '1rem', 
-                    color: '#8E94F2',
-                    lineHeight: '1.8',
-                    fontWeight: '300',
-                    letterSpacing: '0.02em',
-                    marginBottom: '2rem'
-                  }}>
-                    クロスプラットフォーム対応のモバイルアプリケーション開発。
-                  </p>
-                  
-                  <div style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '0.5rem',
-                    justifyContent: 'center'
-                  }}>
-                    <span style={{
-                      padding: '0.3rem 0.8rem',
-                      background: 'rgba(240, 243, 245, 0.1)',
-                      borderRadius: '20px',
-                      fontSize: '0.8rem',
-                      color: '#F0F3F5',
-                      border: '1px solid rgba(240, 243, 245, 0.3)'
-                    }}>
-                      React Native
-                    </span>
-                    <span style={{
-                      padding: '0.3rem 0.8rem',
-                      background: 'rgba(240, 243, 245, 0.1)',
-                      borderRadius: '20px',
-                      fontSize: '0.8rem',
-                      color: '#F0F3F5',
-                      border: '1px solid rgba(240, 243, 245, 0.3)'
-                    }}>
-                      TypeScript
-                    </span>
-                    <span style={{
-                      padding: '0.3rem 0.8rem',
-                      background: 'rgba(240, 243, 245, 0.1)',
-                      borderRadius: '20px',
-                      fontSize: '0.8rem',
-                      color: '#F0F3F5',
-                      border: '1px solid rgba(240, 243, 245, 0.3)'
-                    }}>
-                      Firebase
-                    </span>
+                  top: '0',
+                  left: '0',
+                  width: '100%',
+                  height: '4px',
+                  background: 'linear-gradient(135deg, #10b981, #059669)'
+                }} />
+                <div style={{
+                  width: '60px',
+                  height: '60px',
+                  background: 'linear-gradient(135deg, #10b981, #059669)',
+                  borderRadius: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '1.5rem',
+                  color: 'white',
+                  fontSize: '1.5rem',
+                  fontWeight: 'bold'
+                }}>
+                  ⭐
                 </div>
+                <h3 style={{
+                  fontSize: '1.8rem', 
+                  fontWeight: 'bold',
+                  color: '#1f2937',
+                  marginBottom: '1.5rem'
+                }}>
+                  私たちの特徴
+                </h3>
+                <ul style={{ 
+                  color: '#64748b',
+                  lineHeight: '1.7',
+                  paddingLeft: '1.5rem',
+                  fontSize: '1rem'
+                }}>
+                  <li>ユーザー中心のデザイン思考</li>
+                  <li>最新技術の積極的活用</li>
+                  <li>スケーラブルなソリューション</li>
+                  <li>継続的なサポート体制</li>
+                </ul>
+              </div>
+              
+              <div style={{
+                padding: '3rem',
+                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                borderRadius: '20px',
+                border: '1px solid rgba(229, 231, 235, 0.5)',
+                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.3s ease',
+                position: 'relative',
+                overflow: 'hidden',
+                animation: isVisible['flium-about'] ? 'fadeInUp 1s ease 1s both' : 'none'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-10px)'
+                e.currentTarget.style.boxShadow = '0 20px 60px rgba(0, 0, 0, 0.15)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.1)'
+              }}
+              >
+                <div style={{
+                  position: 'absolute',
+                  top: '0',
+                  left: '0',
+                  width: '100%',
+                  height: '4px',
+                  background: 'linear-gradient(135deg, #f59e0b, #d97706)'
+                }} />
+                <div style={{
+                  width: '60px',
+                  height: '60px',
+                  background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                  borderRadius: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '1.5rem',
+                  color: 'white',
+                  fontSize: '1.5rem',
+                  fontWeight: 'bold'
+                }}>
+                  💡
+                </div>
+                <h3 style={{
+                  fontSize: '1.8rem', 
+                  fontWeight: 'bold',
+                  color: '#1f2937',
+                  marginBottom: '1.5rem'
+                }}>
+                  なぜFliumなのか
+                </h3>
+                <p style={{ 
+                  color: '#64748b',
+                  lineHeight: '1.7',
+                  fontSize: '1.1rem'
+                }}>
+                  「Flium」は「Flow（流れ）」と「Element（元素）」を組み合わせた造語です。私たちは、デジタル体験を構成する基本要素として、美しく機能的な「流れ」を創造します。
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* About セクション */}
+          <section id="about" style={{
+            padding: '6rem 0',
+            background: '#f9fafb',
+            borderTop: '1px solid #e5e7eb'
+          }}>
+            <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+              <h2 style={{ 
+                fontSize: '2.5rem',
+                fontWeight: 'bold',
+                color: '#1f2937',
+                marginBottom: '1rem'
+              }}>
+                About Us
+              </h2>
+              <div style={{
+                width: '60px',
+                height: '3px',
+                background: '#3b82f6',
+                margin: '0 auto'
+              }}></div>
+            </div>
+              <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+              gap: '3rem'
+            }}>
+              <div style={{
+                  padding: '2rem',
+                background: '#f9fafb',
+                borderRadius: '12px',
+                border: '1px solid #e5e7eb'
+              }}>
+                <h3 style={{
+                    fontSize: '1.5rem', 
+                  fontWeight: 'bold',
+                  color: '#1f2937',
+                  marginBottom: '1rem'
+                }}>
+                  Mission
+                </h3>
+                  <p style={{ 
+                  color: '#6b7280',
+                  lineHeight: '1.6'
+                }}>
+                  流れを設計し、実装する。私たちは、見た目の美しさだけでなく、その裏側にあるロジック、データ、ユーザー体験のすべてを滑らかに繋ぐ「流れ」をデザインします。
+                  </p>
+                </div>
+              <div style={{
+                  padding: '2rem',
+                background: '#f9fafb',
+                borderRadius: '12px',
+                border: '1px solid #e5e7eb'
+              }}>
+              <h3 style={{ 
+                  fontSize: '1.5rem',
+                  fontWeight: 'bold',
+                  color: '#1f2937',
+                  marginBottom: '1rem'
+                }}>
+                  Vision
+              </h3>
+              <p style={{ 
+                  color: '#6b7280',
+                  lineHeight: '1.6'
+                }}>
+                  テクノロジーを、水や光のように。私たちが目指すのは、テクノロジーの存在を意識させないほどに自然で、直感的で、美しいデジタル体験が当たり前になる世界です。
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Fliumのサービス セクション */}
+          <section 
+            id="services" 
+            ref={(el) => { sectionRefs.current['services'] = el }}
+            style={{
+              padding: '8rem 0',
+              background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+              borderRadius: '24px',
+              margin: '2rem 0',
+              opacity: isVisible['services'] ? 1 : 0,
+              transform: isVisible['services'] ? 'translateY(0)' : 'translateY(50px)',
+              transition: 'all 0.8s ease'
+            }}
+          >
+            <div style={{ textAlign: 'center', marginBottom: '5rem' }}>
+              <h2 style={{ 
+                fontSize: '3rem',
+                fontWeight: 'bold',
+                background: 'linear-gradient(135deg, #1e293b, #3b82f6)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                marginBottom: '1.5rem',
+                animation: isVisible['services'] ? 'fadeInUp 1s ease 0.2s both' : 'none'
+              }}>
+                Fliumのサービス
+              </h2>
+              <div style={{ 
+                width: '80px',
+                height: '4px',
+                background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                margin: '0 auto',
+                borderRadius: '2px',
+                animation: isVisible['services'] ? 'fadeInUp 1s ease 0.4s both' : 'none'
+              }}></div>
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
+              gap: '3rem',
+              marginBottom: '4rem'
+            }}>
+              <div style={{
+                padding: '3rem',
+                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                borderRadius: '20px',
+                border: '1px solid rgba(229, 231, 235, 0.5)',
+                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.3s ease',
+                position: 'relative',
+                overflow: 'hidden',
+                animation: isVisible['services'] ? 'fadeInUp 1s ease 0.6s both' : 'none'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-10px)'
+                e.currentTarget.style.boxShadow = '0 20px 60px rgba(0, 0, 0, 0.15)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.1)'
+              }}
+              >
+                <div style={{
+                  position: 'absolute',
+                  top: '0',
+                  left: '0',
+                  width: '100%',
+                  height: '4px',
+                  background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)'
+                }} />
+                <div style={{
+                  width: '60px',
+                  height: '60px',
+                  background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                  borderRadius: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '1.5rem',
+                  color: 'white',
+                  fontSize: '1.5rem',
+                  fontWeight: 'bold'
+                }}>
+                  💻
+                </div>
+                <h3 style={{
+                  fontSize: '1.8rem',
+                  fontWeight: 'bold',
+                  color: '#1f2937',
+                  marginBottom: '1.5rem'
+                }}>
+                  Webデザイン・開発
+                </h3>
+                <p style={{
+                  color: '#64748b',
+                  lineHeight: '1.7',
+                  marginBottom: '1.5rem',
+                  fontSize: '1.1rem'
+                }}>
+                  ユーザー中心のデザイン思考に基づき、美しく使いやすいWebサイトを創造します。
+                </p>
+                <ul style={{
+                  color: '#64748b',
+                  lineHeight: '1.7',
+                  paddingLeft: '1.5rem',
+                  fontSize: '1rem'
+                }}>
+                  <li>レスポンシブデザイン</li>
+                  <li>UI/UXデザイン</li>
+                  <li>Next.js/React開発</li>
+                  <li>パフォーマンス最適化</li>
+                </ul>
+              </div>
+              
+              <div style={{
+                padding: '3rem',
+                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                borderRadius: '20px',
+                border: '1px solid rgba(229, 231, 235, 0.5)',
+                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.3s ease',
+                position: 'relative',
+                overflow: 'hidden',
+                animation: isVisible['services'] ? 'fadeInUp 1s ease 0.8s both' : 'none'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-10px)'
+                e.currentTarget.style.boxShadow = '0 20px 60px rgba(0, 0, 0, 0.15)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.1)'
+              }}
+              >
+                <div style={{
+                  position: 'absolute',
+                  top: '0',
+                  left: '0',
+                  width: '100%',
+                  height: '4px',
+                  background: 'linear-gradient(135deg, #10b981, #059669)'
+                }} />
+                <div style={{
+                  width: '60px',
+                  height: '60px',
+                  background: 'linear-gradient(135deg, #10b981, #059669)',
+                  borderRadius: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '1.5rem',
+                  color: 'white',
+                  fontSize: '1.5rem',
+                  fontWeight: 'bold'
+                }}>
+                  ⚙️
+                </div>
+                <h3 style={{
+                  fontSize: '1.8rem',
+                  fontWeight: 'bold',
+                  color: '#1f2937',
+                  marginBottom: '1.5rem'
+                }}>
+                  システム開発・API
+                </h3>
+                <p style={{
+                  color: '#64748b',
+                  lineHeight: '1.7',
+                  marginBottom: '1.5rem',
+                  fontSize: '1.1rem'
+                }}>
+                  最新技術を活用し、スケーラブルで保守性の高いシステムを構築します。
+                </p>
+                <ul style={{
+                  color: '#64748b',
+                  lineHeight: '1.7',
+                  paddingLeft: '1.5rem',
+                  fontSize: '1rem'
+                }}>
+                  <li>RESTful API設計</li>
+                  <li>データベース設計</li>
+                  <li>クラウドインフラ構築</li>
+                  <li>セキュリティ対策</li>
+                </ul>
+              </div>
+              
+              <div style={{
+                padding: '3rem',
+                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                borderRadius: '20px',
+                border: '1px solid rgba(229, 231, 235, 0.5)',
+                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.3s ease',
+                position: 'relative',
+                overflow: 'hidden',
+                animation: isVisible['services'] ? 'fadeInUp 1s ease 1s both' : 'none'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-10px)'
+                e.currentTarget.style.boxShadow = '0 20px 60px rgba(0, 0, 0, 0.15)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.1)'
+              }}
+              >
+                <div style={{
+                  position: 'absolute',
+                  top: '0',
+                  left: '0',
+                  width: '100%',
+                  height: '4px',
+                  background: 'linear-gradient(135deg, #f59e0b, #d97706)'
+                }} />
+                <div style={{
+                  width: '60px',
+                  height: '60px',
+                  background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                  borderRadius: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '1.5rem',
+                  color: 'white',
+                  fontSize: '1.5rem',
+                  fontWeight: 'bold'
+                }}>
+                  📊
+                </div>
+                <h3 style={{
+                  fontSize: '1.8rem',
+                  fontWeight: 'bold',
+                  color: '#1f2937',
+                  marginBottom: '1.5rem'
+                }}>
+                  デジタル戦略・コンサル
+                </h3>
+                <p style={{
+                  color: '#64748b',
+                  lineHeight: '1.7',
+                  marginBottom: '1.5rem',
+                  fontSize: '1.1rem'
+                }}>
+                  ビジネス目標に合わせたデジタル戦略の立案と実行をサポートします。
+                </p>
+                <ul style={{
+                  color: '#64748b',
+                  lineHeight: '1.7',
+                  paddingLeft: '1.5rem',
+                  fontSize: '1rem'
+                }}>
+                  <li>デジタル変革支援</li>
+                  <li>プロセス改善提案</li>
+                  <li>技術選定アドバイス</li>
+                  <li>運用・保守サポート</li>
+                </ul>
+              </div>
+              
+              <div style={{
+                padding: '3rem',
+                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                borderRadius: '20px',
+                border: '1px solid rgba(229, 231, 235, 0.5)',
+                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.3s ease',
+                position: 'relative',
+                overflow: 'hidden',
+                animation: isVisible['services'] ? 'fadeInUp 1s ease 1.2s both' : 'none'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-10px)'
+                e.currentTarget.style.boxShadow = '0 20px 60px rgba(0, 0, 0, 0.15)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.1)'
+              }}
+              >
+                <div style={{
+                  position: 'absolute',
+                  top: '0',
+                  left: '0',
+                  width: '100%',
+                  height: '4px',
+                  background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)'
+                }} />
+                <div style={{
+                  width: '60px',
+                  height: '60px',
+                  background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                  borderRadius: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '1.5rem',
+                  color: 'white',
+                  fontSize: '1.5rem',
+                  fontWeight: 'bold'
+                }}>
+                  🎮
+                </div>
+                <h3 style={{
+                  fontSize: '1.8rem',
+                  fontWeight: 'bold',
+                  color: '#1f2937',
+                  marginBottom: '1.5rem'
+                }}>
+                  3D・インタラクティブ
+                </h3>
+                <p style={{
+                  color: '#64748b',
+                  lineHeight: '1.7',
+                  marginBottom: '1.5rem',
+                  fontSize: '1.1rem'
+                }}>
+                  最新のWeb技術を活用した、没入感のある3D体験を提供します。
+                </p>
+                <ul style={{
+                  color: '#64748b',
+                  lineHeight: '1.7',
+                  paddingLeft: '1.5rem',
+                  fontSize: '1rem'
+                }}>
+                  <li>Three.js開発</li>
+                  <li>インタラクティブ3D</li>
+                  <li>WebGLアプリケーション</li>
+                  <li>VR/AR体験</li>
+                </ul>
+              </div>
+            </div>
+            
+            {/* サービスプロセス */}
+            <div style={{
+              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+              padding: '4rem',
+              borderRadius: '20px',
+              border: '1px solid rgba(229, 231, 235, 0.5)',
+              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
+              animation: isVisible['services'] ? 'fadeInUp 1s ease 1.4s both' : 'none'
+            }}>
+              <h3 style={{
+                fontSize: '2.2rem',
+                fontWeight: 'bold',
+                background: 'linear-gradient(135deg, #1e293b, #3b82f6)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                marginBottom: '3rem',
+                textAlign: 'center'
+              }}>
+                サービス提供プロセス
+              </h3>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                gap: '3rem'
+              }}>
+                <div style={{ 
+                  textAlign: 'center',
+                  padding: '2rem',
+                  background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                  borderRadius: '16px',
+                  border: '1px solid rgba(229, 231, 235, 0.5)',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-5px)'
+                  e.currentTarget.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.1)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.boxShadow = 'none'
+                }}
+                >
+                  <div style={{
+                    width: '80px',
+                    height: '80px',
+                    background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 1.5rem',
+                    color: 'white',
+                    fontSize: '2rem',
+                    fontWeight: 'bold',
+                    boxShadow: '0 8px 25px rgba(59, 130, 246, 0.3)'
+                  }}>
+                    1
+                  </div>
+                  <h4 style={{ 
+                    color: '#1f2937', 
+                    marginBottom: '1rem',
+                    fontSize: '1.3rem',
+                    fontWeight: 'bold'
+                  }}>ヒアリング</h4>
+                  <p style={{ 
+                    color: '#64748b', 
+                    fontSize: '1rem',
+                    lineHeight: '1.6'
+                  }}>お客様のニーズを詳しくお聞きします</p>
+                </div>
+                <div style={{ 
+                  textAlign: 'center',
+                  padding: '2rem',
+                  background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                  borderRadius: '16px',
+                  border: '1px solid rgba(229, 231, 235, 0.5)',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-5px)'
+                  e.currentTarget.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.1)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.boxShadow = 'none'
+                }}
+                >
+                  <div style={{
+                    width: '80px',
+                    height: '80px',
+                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 1.5rem',
+                    color: 'white',
+                    fontSize: '2rem',
+                    fontWeight: 'bold',
+                    boxShadow: '0 8px 25px rgba(16, 185, 129, 0.3)'
+                  }}>
+                    2
+                  </div>
+                  <h4 style={{ 
+                    color: '#1f2937', 
+                    marginBottom: '1rem',
+                    fontSize: '1.3rem',
+                    fontWeight: 'bold'
+                  }}>提案</h4>
+                  <p style={{ 
+                    color: '#64748b', 
+                    fontSize: '1rem',
+                    lineHeight: '1.6'
+                  }}>最適なソリューションをご提案します</p>
+                </div>
+                <div style={{ 
+                  textAlign: 'center',
+                  padding: '2rem',
+                  background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                  borderRadius: '16px',
+                  border: '1px solid rgba(229, 231, 235, 0.5)',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-5px)'
+                  e.currentTarget.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.1)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.boxShadow = 'none'
+                }}
+                >
+                  <div style={{
+                    width: '80px',
+                    height: '80px',
+                    background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 1.5rem',
+                    color: 'white',
+                    fontSize: '2rem',
+                    fontWeight: 'bold',
+                    boxShadow: '0 8px 25px rgba(245, 158, 11, 0.3)'
+                  }}>
+                    3
+                  </div>
+                  <h4 style={{ 
+                    color: '#1f2937', 
+                    marginBottom: '1rem',
+                    fontSize: '1.3rem',
+                    fontWeight: 'bold'
+                  }}>開発</h4>
+                  <p style={{ 
+                    color: '#64748b', 
+                    fontSize: '1rem',
+                    lineHeight: '1.6'
+                  }}>高品質な成果物を開発します</p>
+                </div>
+                <div style={{ 
+                  textAlign: 'center',
+                  padding: '2rem',
+                  background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                  borderRadius: '16px',
+                  border: '1px solid rgba(229, 231, 235, 0.5)',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-5px)'
+                  e.currentTarget.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.1)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.boxShadow = 'none'
+                }}
+                >
+                  <div style={{
+                    width: '80px',
+                    height: '80px',
+                    background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 1.5rem',
+                    color: 'white',
+                    fontSize: '2rem',
+                    fontWeight: 'bold',
+                    boxShadow: '0 8px 25px rgba(139, 92, 246, 0.3)'
+                  }}>
+                    4
+                  </div>
+                  <h4 style={{ 
+                    color: '#1f2937', 
+                    marginBottom: '1rem',
+                    fontSize: '1.3rem',
+                    fontWeight: 'bold'
+                  }}>運用</h4>
+                  <p style={{ 
+                    color: '#64748b', 
+                    fontSize: '1rem',
+                    lineHeight: '1.6'
+                  }}>継続的なサポートを提供します</p>
                 </div>
               </div>
             </div>
           </section>
 
-          {/* Technology セクション */}
-          <section style={{ 
-            marginBottom: '8rem',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '100vh',
-            padding: '4rem 2rem'
-          }}>
-                <div style={{ 
-                textAlign: 'center',
-              marginBottom: '6rem',
-              maxWidth: '800px'
-            }}>
+          {/* 導入事例 セクション */}
+          <section 
+            id="case-studies" 
+            ref={(el) => { sectionRefs.current['case-studies'] = el }}
+            style={{
+              padding: '8rem 0',
+              background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+              borderRadius: '24px',
+              margin: '2rem 0',
+              opacity: isVisible['case-studies'] ? 1 : 0,
+              transform: isVisible['case-studies'] ? 'translateY(0)' : 'translateY(50px)',
+              transition: 'all 0.8s ease'
+            }}
+          >
+            <div style={{ textAlign: 'center', marginBottom: '5rem' }}>
               <h2 style={{ 
-                fontSize: '5rem', 
-                fontWeight: '200',
-                letterSpacing: '0.2em',
-                margin: 0,
-                color: '#F0F3F5',
-                animation: 'fadeInUp 1s ease-out',
-                textShadow: '0 0 60px rgba(240, 243, 245, 0.8), 0 0 100px rgba(0, 245, 212, 0.3)',
-                filter: 'drop-shadow(0 0 20px rgba(240, 243, 245, 0.5))'
+                fontSize: '3rem',
+                fontWeight: 'bold',
+                background: 'linear-gradient(135deg, #1e293b, #3b82f6)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                marginBottom: '1.5rem',
+                animation: isVisible['case-studies'] ? 'fadeInUp 1s ease 0.2s both' : 'none'
               }}>
-                Technology
+                導入事例
               </h2>
               <div style={{
-                width: '150px',
-                height: '3px',
-                background: 'linear-gradient(90deg, transparent, #00F5D4, #8E94F2, transparent)',
-                margin: '3rem auto 0',
+                width: '80px',
+                height: '4px',
+                background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                margin: '0 auto',
                 borderRadius: '2px',
-                animation: 'expandWidth 2s ease-out 0.5s both'
+                animation: isVisible['case-studies'] ? 'fadeInUp 1s ease 0.4s both' : 'none'
               }}></div>
-              </div>
-              
-            {/* 技術スタック */}
-            <div className="tech-grid" style={{ 
+            </div>
+
+            <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-              gap: '2rem',
-              maxWidth: '1000px',
-              width: '100%',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
+              gap: '3rem',
               marginBottom: '4rem'
             }}>
-              {/* フロントエンド */}
-                <div className="tech-card" style={{ 
-                padding: '3rem 2rem',
-                background: 'rgba(0, 245, 212, 0.03)',
-                  borderRadius: '20px',
-                border: '1px solid rgba(0, 245, 212, 0.2)',
-                backdropFilter: 'blur(40px)',
-                  position: 'relative',
-                  overflow: 'hidden',
-                animation: 'fadeInUp 1s ease-out 0.2s both',
-                boxShadow: '0 15px 40px rgba(0, 245, 212, 0.1)'
+              <div style={{
+                padding: '3rem',
+                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                borderRadius: '20px',
+                border: '1px solid rgba(229, 231, 235, 0.5)',
+                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.3s ease',
+                position: 'relative',
+                overflow: 'hidden',
+                animation: isVisible['case-studies'] ? 'fadeInUp 1s ease 0.6s both' : 'none'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-10px)'
+                e.currentTarget.style.boxShadow = '0 20px 60px rgba(0, 0, 0, 0.15)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.1)'
+              }}
+              >
+                <div style={{
+                  position: 'absolute',
+                  top: '0',
+                  left: '0',
+                  width: '100%',
+                  height: '4px',
+                  background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)'
+                }} />
+                <div style={{
+                  background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                  color: 'white',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '25px',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  display: 'inline-block',
+                  marginBottom: '2rem',
+                  boxShadow: '0 4px 15px rgba(59, 130, 246, 0.3)'
                 }}>
-                  <div style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                  height: '2px',
-                    background: 'linear-gradient(90deg, transparent, #00F5D4, transparent)',
-                    animation: 'shimmer 4s ease-in-out infinite'
-                  }}></div>
-                
-                <div style={{ textAlign: 'center' }}>
-                  <h3 className="tech-title" style={{ 
-                    fontSize: '1.8rem', 
-                    color: '#F0F3F5',
-                    marginBottom: '1.5rem',
-                    fontWeight: '200',
-                    letterSpacing: '0.05em'
-                  }}>
-                    フロントエンド
-                  </h3>
-                  
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.8rem'
-                  }}>
-                    <span className="tech-tag" style={{
-                      padding: '0.5rem 1rem',
-                      background: 'rgba(0, 245, 212, 0.1)',
-                      borderRadius: '25px',
-                      fontSize: '0.9rem',
-                      color: '#00F5D4',
-                      border: '1px solid rgba(0, 245, 212, 0.3)'
-                    }}>
-                      React / Next.js
-                    </span>
-                    <span className="tech-tag" style={{
-                      padding: '0.5rem 1rem',
-                      background: 'rgba(0, 245, 212, 0.1)',
-                      borderRadius: '25px',
-                      fontSize: '0.9rem',
-                      color: '#00F5D4',
-                      border: '1px solid rgba(0, 245, 212, 0.3)'
-                    }}>
-                      TypeScript
-                    </span>
-                    <span className="tech-tag" style={{
-                      padding: '0.5rem 1rem',
-                      background: 'rgba(0, 245, 212, 0.1)',
-                      borderRadius: '25px',
-                      fontSize: '0.9rem',
-                      color: '#00F5D4',
-                      border: '1px solid rgba(0, 245, 212, 0.3)'
-                    }}>
-                      Three.js / R3F
-                    </span>
-                    <span className="tech-tag" style={{
-                      padding: '0.5rem 1rem',
-                      background: 'rgba(0, 245, 212, 0.1)',
-                      borderRadius: '25px',
-                      fontSize: '0.9rem',
-                      color: '#00F5D4',
-                      border: '1px solid rgba(0, 245, 212, 0.3)'
-                    }}>
-                      Tailwind CSS
-                    </span>
-                  </div>
+                  WEBサイト
                 </div>
-              </div>
-
-              {/* バックエンド */}
-              <div className="tech-card" style={{ 
-                padding: '3rem 2rem',
-                background: 'rgba(142, 148, 242, 0.03)',
-                borderRadius: '20px',
-                border: '1px solid rgba(142, 148, 242, 0.2)',
-                backdropFilter: 'blur(40px)',
-                position: 'relative',
-                overflow: 'hidden',
-                animation: 'fadeInUp 1s ease-out 0.4s both',
-                boxShadow: '0 15px 40px rgba(142, 148, 242, 0.1)'
-              }}>
+                <h3 style={{
+                  fontSize: '1.8rem',
+                  fontWeight: 'bold',
+                  color: '#1f2937',
+                  marginBottom: '1.5rem',
+                  lineHeight: '1.3'
+                }}>
+                  地方病院のWEBサイト
+                </h3>
+                <p style={{
+                  color: '#64748b',
+                  lineHeight: '1.7',
+                  marginBottom: '2rem',
+                  fontSize: '1.1rem'
+                }}>
+                  地方病院のWEBサイトを、白を基調とした誠実、清潔なイメージで構築。
+                </p>
                 <div style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: '2px',
-                  background: 'linear-gradient(90deg, transparent, #8E94F2, transparent)',
-                  animation: 'shimmer 4s ease-in-out infinite 1s'
-                }}></div>
-                
-                <div style={{ textAlign: 'center' }}>
-                  <h3 style={{ 
-                    fontSize: '1.8rem', 
-                    color: '#F0F3F5',
-                    marginBottom: '1.5rem',
-                    fontWeight: '200',
-                    letterSpacing: '0.05em'
-                  }}>
-                    バックエンド
-                  </h3>
-                  
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.8rem'
-                  }}>
-                    <span style={{
-                      padding: '0.5rem 1rem',
-                      background: 'rgba(142, 148, 242, 0.1)',
-                      borderRadius: '25px',
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '0.75rem'
+                }}>
+                  <span style={{
+                    background: 'linear-gradient(135deg, #f3f4f6, #e5e7eb)',
+                    color: '#64748b',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '15px',
                     fontSize: '0.9rem',
-                    color: '#8E94F2',
-                      border: '1px solid rgba(142, 148, 242, 0.3)'
-                    }}>
-                      Node.js / Express
-                    </span>
-                    <span style={{
-                      padding: '0.5rem 1rem',
-                      background: 'rgba(142, 148, 242, 0.1)',
-                      borderRadius: '25px',
-                      fontSize: '0.9rem',
-                      color: '#8E94F2',
-                      border: '1px solid rgba(142, 148, 242, 0.3)'
-                    }}>
-                      Python / Django
-                    </span>
-                    <span style={{
-                      padding: '0.5rem 1rem',
-                      background: 'rgba(142, 148, 242, 0.1)',
-                      borderRadius: '25px',
-                      fontSize: '0.9rem',
-                      color: '#8E94F2',
-                      border: '1px solid rgba(142, 148, 242, 0.3)'
-                    }}>
-                      PostgreSQL
-                    </span>
-                    <span style={{
-                      padding: '0.5rem 1rem',
-                      background: 'rgba(142, 148, 242, 0.1)',
-                      borderRadius: '25px',
-                      fontSize: '0.9rem',
-                      color: '#8E94F2',
-                      border: '1px solid rgba(142, 148, 242, 0.3)'
-                    }}>
-                      Redis
-                    </span>
-                  </div>
+                    fontWeight: '500',
+                    border: '1px solid rgba(229, 231, 235, 0.5)'
+                  }}>
+                    WordPress
+                  </span>
+                  <span style={{
+                    background: 'linear-gradient(135deg, #f3f4f6, #e5e7eb)',
+                    color: '#64748b',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '15px',
+                    fontSize: '0.9rem',
+                    fontWeight: '500',
+                    border: '1px solid rgba(229, 231, 235, 0.5)'
+                  }}>
+                    HTML
+                  </span>
+                  <span style={{
+                    background: 'linear-gradient(135deg, #f3f4f6, #e5e7eb)',
+                    color: '#64748b',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '15px',
+                    fontSize: '0.9rem',
+                    fontWeight: '500',
+                    border: '1px solid rgba(229, 231, 235, 0.5)'
+                  }}>
+                    CSS
+                  </span>
+                  <span style={{
+                    background: 'linear-gradient(135deg, #f3f4f6, #e5e7eb)',
+                    color: '#64748b',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '15px',
+                    fontSize: '0.9rem',
+                    fontWeight: '500',
+                    border: '1px solid rgba(229, 231, 235, 0.5)'
+                  }}>
+                    PHP
+                  </span>
                 </div>
               </div>
 
-              {/* クラウド・インフラ */}
-              <div className="tech-card" style={{ 
-                padding: '3rem 2rem',
-                background: 'rgba(240, 243, 245, 0.03)',
+              <div style={{
+                padding: '3rem',
+                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
                 borderRadius: '20px',
-                border: '1px solid rgba(240, 243, 245, 0.2)',
-                backdropFilter: 'blur(40px)',
+                border: '1px solid rgba(229, 231, 235, 0.5)',
+                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.3s ease',
                 position: 'relative',
                 overflow: 'hidden',
-                animation: 'fadeInUp 1s ease-out 0.6s both',
-                boxShadow: '0 15px 40px rgba(240, 243, 245, 0.1)'
-              }}>
+                animation: isVisible['case-studies'] ? 'fadeInUp 1s ease 0.8s both' : 'none'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-10px)'
+                e.currentTarget.style.boxShadow = '0 20px 60px rgba(0, 0, 0, 0.15)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.1)'
+              }}
+              >
                 <div style={{
                   position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: '2px',
-                    background: 'linear-gradient(90deg, transparent, #F0F3F5, transparent)',
-                    animation: 'shimmer 4s ease-in-out infinite 2s'
-                  }}></div>
-                
-                <div style={{ textAlign: 'center' }}>
-                  <h3 style={{ 
-                    fontSize: '1.8rem', 
-                    color: '#F0F3F5',
-                    marginBottom: '1.5rem',
-                    fontWeight: '200',
-                    letterSpacing: '0.05em'
+                  top: '0',
+                  left: '0',
+                  width: '100%',
+                  height: '4px',
+                  background: 'linear-gradient(135deg, #10b981, #059669)'
+                }} />
+                <div style={{
+                  background: 'linear-gradient(135deg, #10b981, #059669)',
+                  color: 'white',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '25px',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  display: 'inline-block',
+                  marginBottom: '2rem',
+                  boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)'
+                }}>
+                  WEBサービス開発
+                </div>
+                <h3 style={{
+                  fontSize: '1.8rem',
+                  fontWeight: 'bold',
+                  color: '#1f2937',
+                  marginBottom: '1.5rem',
+                  lineHeight: '1.3'
+                }}>
+                  大規模なWEBサービスの開発
+                </h3>
+                <p style={{
+                  color: '#64748b',
+                  lineHeight: '1.7',
+                  marginBottom: '2rem',
+                  fontSize: '1.1rem'
+                }}>
+                  20ページに及び様々な最新技術を組み合わせた大規模なWEBサービスを開発。
+                </p>
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '0.75rem'
+                }}>
+                  <span style={{
+                    background: 'linear-gradient(135deg, #f3f4f6, #e5e7eb)',
+                    color: '#64748b',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '15px',
+                    fontSize: '0.9rem',
+                    fontWeight: '500',
+                    border: '1px solid rgba(229, 231, 235, 0.5)'
                   }}>
-                    クラウド・インフラ
-                  </h3>
-                  
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.8rem'
+                    Next.js
+                  </span>
+                  <span style={{
+                    background: 'linear-gradient(135deg, #f3f4f6, #e5e7eb)',
+                    color: '#64748b',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '15px',
+                    fontSize: '0.9rem',
+                    fontWeight: '500',
+                    border: '1px solid rgba(229, 231, 235, 0.5)'
                   }}>
-                    <span style={{
-                      padding: '0.5rem 1rem',
-                      background: 'rgba(240, 243, 245, 0.1)',
-                      borderRadius: '25px',
-                      fontSize: '0.9rem',
-                      color: '#F0F3F5',
-                      border: '1px solid rgba(240, 243, 245, 0.3)'
-                    }}>
-                      AWS
-                    </span>
-                    <span style={{
-                      padding: '0.5rem 1rem',
-                      background: 'rgba(240, 243, 245, 0.1)',
-                      borderRadius: '25px',
-                      fontSize: '0.9rem',
-                      color: '#F0F3F5',
-                      border: '1px solid rgba(240, 243, 245, 0.3)'
-                    }}>
-                      Docker
-                    </span>
-                    <span style={{
-                      padding: '0.5rem 1rem',
-                      background: 'rgba(240, 243, 245, 0.1)',
-                      borderRadius: '25px',
-                      fontSize: '0.9rem',
-                      color: '#F0F3F5',
-                      border: '1px solid rgba(240, 243, 245, 0.3)'
-                    }}>
-                      Kubernetes
-                    </span>
-                    <span style={{
-                      padding: '0.5rem 1rem',
-                      background: 'rgba(240, 243, 245, 0.1)',
-                      borderRadius: '25px',
-                      fontSize: '0.9rem',
-                      color: '#F0F3F5',
-                      border: '1px solid rgba(240, 243, 245, 0.3)'
-                    }}>
-                      Terraform
-                    </span>
-                  </div>
+                    Python
+                  </span>
+                  <span style={{
+                    background: 'linear-gradient(135deg, #f3f4f6, #e5e7eb)',
+                    color: '#64748b',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '15px',
+                    fontSize: '0.9rem',
+                    fontWeight: '500',
+                    border: '1px solid rgba(229, 231, 235, 0.5)'
+                  }}>
+                    Neon
+                  </span>
+                </div>
+              </div>
+
+              <div style={{
+                padding: '3rem',
+                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                borderRadius: '20px',
+                border: '1px solid rgba(229, 231, 235, 0.5)',
+                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.3s ease',
+                position: 'relative',
+                overflow: 'hidden',
+                animation: isVisible['case-studies'] ? 'fadeInUp 1s ease 1s both' : 'none'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-10px)'
+                e.currentTarget.style.boxShadow = '0 20px 60px rgba(0, 0, 0, 0.15)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.1)'
+              }}
+              >
+                <div style={{
+                  position: 'absolute',
+                  top: '0',
+                  left: '0',
+                  width: '100%',
+                  height: '4px',
+                  background: 'linear-gradient(135deg, #f59e0b, #d97706)'
+                }} />
+                <div style={{
+                  background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                  color: 'white',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '25px',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  display: 'inline-block',
+                  marginBottom: '2rem',
+                  boxShadow: '0 4px 15px rgba(245, 158, 11, 0.3)'
+                }}>
+                  企業サイト
+                </div>
+                <h3 style={{
+                  fontSize: '1.8rem',
+                  fontWeight: 'bold',
+                  color: '#1f2937',
+                  marginBottom: '1.5rem',
+                  lineHeight: '1.3'
+                }}>
+                  企業サイトの開発
+                </h3>
+                <p style={{
+                  color: '#64748b',
+                  lineHeight: '1.7',
+                  marginBottom: '2rem',
+                  fontSize: '1.1rem'
+                }}>
+                  伝統的な製造業のデジタル変革を支援。３Dビジュアライゼーションを活用した製品紹介サイトを構築
+                </p>
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '0.75rem'
+                }}>
+                  <span style={{
+                    background: 'linear-gradient(135deg, #f3f4f6, #e5e7eb)',
+                    color: '#64748b',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '15px',
+                    fontSize: '0.9rem',
+                    fontWeight: '500',
+                    border: '1px solid rgba(229, 231, 235, 0.5)'
+                  }}>
+                    Three.js
+                  </span>
+                  <span style={{
+                    background: 'linear-gradient(135deg, #f3f4f6, #e5e7eb)',
+                    color: '#64748b',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '15px',
+                    fontSize: '0.9rem',
+                    fontWeight: '500',
+                    border: '1px solid rgba(229, 231, 235, 0.5)'
+                  }}>
+                    React
+                  </span>
+                  <span style={{
+                    background: 'linear-gradient(135deg, #f3f4f6, #e5e7eb)',
+                    color: '#64748b',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '15px',
+                    fontSize: '0.9rem',
+                    fontWeight: '500',
+                    border: '1px solid rgba(229, 231, 235, 0.5)'
+                  }}>
+                    CMS
+                  </span>
+                </div>
+              </div>
+
+              <div style={{
+                padding: '3rem',
+                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                borderRadius: '20px',
+                border: '1px solid rgba(229, 231, 235, 0.5)',
+                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.3s ease',
+                position: 'relative',
+                overflow: 'hidden',
+                animation: isVisible['case-studies'] ? 'fadeInUp 1s ease 1.2s both' : 'none'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-10px)'
+                e.currentTarget.style.boxShadow = '0 20px 60px rgba(0, 0, 0, 0.15)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.1)'
+              }}
+              >
+                <div style={{
+                  position: 'absolute',
+                  top: '0',
+                  left: '0',
+                  width: '100%',
+                  height: '4px',
+                  background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)'
+                }} />
+                <div style={{
+                  background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                  color: 'white',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '25px',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  display: 'inline-block',
+                  marginBottom: '2rem',
+                  boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)'
+                }}>
+                  業務効率化
+                </div>
+                <h3 style={{
+                  fontSize: '1.8rem',
+                  fontWeight: 'bold',
+                  color: '#1f2937',
+                  marginBottom: '1.5rem',
+                  lineHeight: '1.3'
+                }}>
+                  企業向け業務効率化システムの開発
+                </h3>
+                <p style={{
+                  color: '#64748b',
+                  lineHeight: '1.7',
+                  marginBottom: '2rem',
+                  fontSize: '1.1rem'
+                }}>
+                  Pythonを利用したスクレイピングシステムの開発や、GASを使用した業務効率化支援を提供。
+                </p>
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '0.75rem'
+                }}>
+                  <span style={{
+                    background: 'linear-gradient(135deg, #f3f4f6, #e5e7eb)',
+                    color: '#64748b',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '15px',
+                    fontSize: '0.9rem',
+                    fontWeight: '500',
+                    border: '1px solid rgba(229, 231, 235, 0.5)'
+                  }}>
+                    Python
+                  </span>
+                  <span style={{
+                    background: 'linear-gradient(135deg, #f3f4f6, #e5e7eb)',
+                    color: '#64748b',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '15px',
+                    fontSize: '0.9rem',
+                    fontWeight: '500',
+                    border: '1px solid rgba(229, 231, 235, 0.5)'
+                  }}>
+                    GAS
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* 開発手法 */}
-            <div className="tech-methodology" style={{ 
-              padding: '4rem 3rem',
-              background: 'rgba(0, 0, 0, 0.3)',
-              borderRadius: '24px',
-              backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              maxWidth: '800px',
-              width: '100%',
-              textAlign: 'center',
-              animation: 'fadeInUp 1s ease-out 0.8s both'
+            {/* 実績サマリー */}
+            <div style={{
+              background: '#ffffff',
+              padding: '3rem',
+              borderRadius: '12px',
+              border: '1px solid #e5e7eb',
+              textAlign: 'center'
             }}>
-              <h3 style={{ 
-                fontSize: '2.5rem', 
-                    color: '#F0F3F5',
-                marginBottom: '2rem',
-                fontWeight: '200',
-                letterSpacing: '0.05em'
-              }}>
-                アジャイル開発
-              </h3>
-              
-              <p style={{ 
-                fontSize: '1.2rem', 
-                color: '#8E94F2',
-                    lineHeight: '1.8',
-                    fontWeight: '300',
-                    letterSpacing: '0.02em',
+              <h3 style={{
+                fontSize: '1.8rem',
+                fontWeight: 'bold',
+                color: '#1f2937',
                 marginBottom: '2rem'
-                  }}>
-                継続的な改善とイテレーションを通じて、クライアントのニーズに最適化されたソリューションを提供します。
-              </p>
-              
-                  <div style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: '1rem',
-                justifyContent: 'center'
               }}>
-                <span className="tech-methodology-tag" style={{
-                  padding: '0.5rem 1.5rem',
-                  background: 'rgba(0, 245, 212, 0.1)',
-                  borderRadius: '30px',
-                  fontSize: '0.9rem',
-                  color: '#00F5D4',
-                  border: '1px solid rgba(0, 245, 212, 0.3)'
-                }}>
-                  Scrum
-                </span>
-                <span className="tech-methodology-tag" style={{
-                  padding: '0.5rem 1.5rem',
-                  background: 'rgba(142, 148, 242, 0.1)',
-                  borderRadius: '30px',
-                    fontSize: '0.9rem',
-                    color: '#8E94F2',
-                  border: '1px solid rgba(142, 148, 242, 0.3)'
-                }}>
-                  CI/CD
-                </span>
-                <span className="tech-methodology-tag" style={{
-                  padding: '0.5rem 1.5rem',
-                  background: 'rgba(240, 243, 245, 0.1)',
-                  borderRadius: '30px',
-                  fontSize: '0.9rem',
-                  color: '#F0F3F5',
-                  border: '1px solid rgba(240, 243, 245, 0.3)'
-                }}>
-                  TDD
-                </span>
+                実績サマリー
+              </h3>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '2rem'
+              }}>
+                <div>
+                  <div style={{
+                    fontSize: '3rem',
+                    fontWeight: 'bold',
+                    color: '#3b82f6',
+                    marginBottom: '0.5rem'
+                  }}>
+                    50+
                   </div>
+                  <p style={{ color: '#6b7280' }}>プロジェクト完了</p>
+                </div>
+                <div>
+                  <div style={{
+                    fontSize: '3rem',
+                    fontWeight: 'bold',
+                    color: '#3b82f6',
+                    marginBottom: '0.5rem'
+                  }}>
+                    30+
+                  </div>
+                  <p style={{ color: '#6b7280' }}>満足いただいたクライアント</p>
+                </div>
+                <div>
+                  <div style={{
+                    fontSize: '3rem',
+                    fontWeight: 'bold',
+                    color: '#3b82f6',
+                    marginBottom: '0.5rem'
+                  }}>
+                    100%
+                  </div>
+                  <p style={{ color: '#6b7280' }}>納期遵守率</p>
+                </div>
+                <div>
+                  <div style={{
+                    fontSize: '3rem',
+                    fontWeight: 'bold',
+                    color: '#3b82f6',
+                    marginBottom: '0.5rem'
+                  }}>
+                    24/7
+                  </div>
+                  <p style={{ color: '#6b7280' }}>サポート体制</p>
+                </div>
+              </div>
             </div>
           </section>
 
           {/* Contact セクション */}
-          <section style={{ 
-            marginBottom: '8rem',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '100vh',
-            padding: '4rem 2rem'
-          }}>
-                <div style={{ 
-              textAlign: 'center', 
-              marginBottom: '6rem',
-              maxWidth: '800px'
-            }}>
+          <section 
+            id="contact" 
+            ref={(el) => { sectionRefs.current['contact'] = el }}
+            style={{
+              padding: '8rem 0',
+              background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+              borderRadius: '24px',
+              margin: '2rem 0',
+              opacity: isVisible['contact'] ? 1 : 0,
+              transform: isVisible['contact'] ? 'translateY(0)' : 'translateY(50px)',
+              transition: 'all 0.8s ease'
+            }}
+          >
+            <div style={{ textAlign: 'center', marginBottom: '5rem' }}>
               <h2 style={{ 
-                fontSize: '5rem', 
-                fontWeight: '200',
-                letterSpacing: '0.2em',
-                margin: 0,
-                color: '#F0F3F5',
-                animation: 'fadeInUp 1s ease-out',
-                textShadow: '0 0 60px rgba(240, 243, 245, 0.8), 0 0 100px rgba(0, 245, 212, 0.3)',
-                filter: 'drop-shadow(0 0 20px rgba(240, 243, 245, 0.5))'
+                fontSize: '3rem',
+                fontWeight: 'bold',
+                background: 'linear-gradient(135deg, #1e293b, #3b82f6)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                marginBottom: '1.5rem',
+                animation: isVisible['contact'] ? 'fadeInUp 1s ease 0.2s both' : 'none'
               }}>
                 Contact
               </h2>
               <div style={{
-                width: '150px',
-                height: '3px',
-                background: 'linear-gradient(90deg, transparent, #00F5D4, #8E94F2, transparent)',
-                margin: '3rem auto 0',
+                width: '80px',
+                height: '4px',
+                background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                margin: '0 auto',
                 borderRadius: '2px',
-                animation: 'expandWidth 2s ease-out 0.5s both'
+                animation: isVisible['contact'] ? 'fadeInUp 1s ease 0.4s both' : 'none'
               }}></div>
             </div>
 
-            {/* お問い合わせフォーム */}
-            <div className="contact-grid" style={{ 
+            <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
-              gap: '4rem',
-              maxWidth: '1000px',
-              width: '100%'
-            }}>
-              {/* 連絡先情報 */}
-              <div className="contact-info" style={{ 
-                padding: '4rem 3rem',
-                background: 'rgba(142, 148, 242, 0.03)',
-                borderRadius: '24px',
-                border: '1px solid rgba(142, 148, 242, 0.2)',
-                backdropFilter: 'blur(40px)',
+              gap: '3rem'
+              }}>
+                <div style={{
+                padding: '3rem',
+                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                borderRadius: '20px',
+                border: '1px solid rgba(229, 231, 235, 0.5)',
+                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.3s ease',
                 position: 'relative',
                 overflow: 'hidden',
-                animation: 'fadeInUp 1s ease-out 0.4s both',
-                boxShadow: '0 20px 60px rgba(142, 148, 242, 0.1)'
-              }}>
-                  <div style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                  height: '2px',
-                    background: 'linear-gradient(90deg, transparent, #8E94F2, transparent)',
-                    animation: 'shimmer 4s ease-in-out infinite 1s'
-                  }}></div>
-                
-                <h3 className="contact-info-title" style={{ 
-                  fontSize: '2.2rem', 
-                  color: '#F0F3F5',
+                animation: isVisible['contact'] ? 'fadeInUp 1s ease 0.6s both' : 'none'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-5px)'
+                e.currentTarget.style.boxShadow = '0 15px 50px rgba(0, 0, 0, 0.15)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.1)'
+              }}
+              >
+                <div style={{
+                  position: 'absolute',
+                  top: '0',
+                  left: '0',
+                  width: '100%',
+                  height: '4px',
+                  background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)'
+                }} />
+                <div style={{
+                  width: '60px',
+                  height: '60px',
+                  background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                  borderRadius: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   marginBottom: '2rem',
-                  fontWeight: '200',
-                  letterSpacing: '0.05em',
-                  textAlign: 'center'
+                  color: 'white',
+                  fontSize: '1.5rem',
+                  fontWeight: 'bold'
+                }}>
+                  📧
+                </div>
+                  <h3 style={{ 
+                  fontSize: '1.8rem',
+                  fontWeight: 'bold',
+                  color: '#1f2937',
+                  marginBottom: '2rem'
                 }}>
                   連絡先情報
-                </h3>
-                
+              </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                  <div className="contact-info-item" style={{ textAlign: 'center' }}>
-                  <h4 style={{ 
-                    color: '#8E94F2',
-                    fontSize: '1.1rem',
-                    marginBottom: '0.5rem',
-                    fontWeight: '500'
-                  }}>
-                    メールアドレス
-                  </h4>
+                  <div>
+                    <h4 style={{
+                      color: '#64748b',
+                      fontSize: '1rem',
+                      marginBottom: '0.75rem',
+                      fontWeight: '600'
+                    }}>
+                      メールアドレス
+                    </h4>
                   <p style={{ 
-                    color: '#F0F3F5',
-                    fontSize: '1rem',
-                    fontWeight: '300'
-                  }}>
-                    work.ryuto.hatsuno@gmail.com
-                  </p>
-                </div>
-                  <div style={{ textAlign: 'center' }}>
-                    <h4 style={{ 
-                      color: '#8E94F2', 
-                      fontSize: '1.1rem', 
-                      marginBottom: '0.5rem',
+                      color: '#1f2937',
+                      fontSize: '1.1rem',
                       fontWeight: '500'
+                    }}>
+                      work.ryuto.hatsuno@gmail.com
+                    </p>
+                  </div>
+                  <div>
+                    <h4 style={{
+                      color: '#64748b',
+                      fontSize: '1rem',
+                      marginBottom: '0.75rem',
+                      fontWeight: '600'
                     }}>
                       営業時間
                     </h4>
-                    <p style={{ 
-                      color: '#F0F3F5', 
-                      fontSize: '1rem',
-                      fontWeight: '300'
+                  <p style={{ 
+                      color: '#1f2937',
+                      fontSize: '1.1rem',
+                      fontWeight: '500'
                     }}>
                       平日 9:00 - 18:00
                     </p>
+                </div>
+                </div>
+              </div>
+              
+                <div style={{ 
+                padding: '3rem',
+                background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+                borderRadius: '20px',
+                border: '1px solid rgba(229, 231, 235, 0.5)',
+                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.3s ease',
+                position: 'relative',
+                overflow: 'hidden',
+                animation: isVisible['contact'] ? 'fadeInUp 1s ease 0.8s both' : 'none'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-5px)'
+                e.currentTarget.style.boxShadow = '0 15px 50px rgba(0, 0, 0, 0.15)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.1)'
+              }}
+              >
+                <div style={{
+                  position: 'absolute',
+                  top: '0',
+                  left: '0',
+                  width: '100%',
+                  height: '4px',
+                  background: 'linear-gradient(135deg, #10b981, #059669)'
+                }} />
+                <div style={{
+                  width: '60px',
+                  height: '60px',
+                  background: 'linear-gradient(135deg, #10b981, #059669)',
+                  borderRadius: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '2rem',
+                  color: 'white',
+                  fontSize: '1.5rem',
+                  fontWeight: 'bold'
+                }}>
+                  💬
+                </div>
+                  <h3 style={{ 
+                  fontSize: '1.8rem',
+                  fontWeight: 'bold',
+                  color: '#1f2937',
+                  marginBottom: '2rem'
+                }}>
+                  お問い合わせ
+                  </h3>
+                <form style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  <input
+                    type="text"
+                    placeholder="お名前"
+                    style={{
+                      padding: '1rem',
+                      border: '2px solid rgba(229, 231, 235, 0.5)',
+                      borderRadius: '12px',
+                      fontSize: '1rem',
+                      background: 'rgba(248, 250, 252, 0.5)',
+                      transition: 'all 0.3s ease',
+                      outline: 'none'
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = '#3b82f6'
+                      e.currentTarget.style.background = '#ffffff'
+                      e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)'
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(229, 231, 235, 0.5)'
+                      e.currentTarget.style.background = 'rgba(248, 250, 252, 0.5)'
+                      e.currentTarget.style.boxShadow = 'none'
+                    }}
+                  />
+                  <input
+                    type="email"
+                    placeholder="メールアドレス"
+                    style={{
+                      padding: '1rem',
+                      border: '2px solid rgba(229, 231, 235, 0.5)',
+                      borderRadius: '12px',
+                      fontSize: '1rem',
+                      background: 'rgba(248, 250, 252, 0.5)',
+                      transition: 'all 0.3s ease',
+                      outline: 'none'
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = '#3b82f6'
+                      e.currentTarget.style.background = '#ffffff'
+                      e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)'
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(229, 231, 235, 0.5)'
+                      e.currentTarget.style.background = 'rgba(248, 250, 252, 0.5)'
+                      e.currentTarget.style.boxShadow = 'none'
+                    }}
+                  />
+                  <textarea
+                    placeholder="メッセージ"
+                    rows={4}
+                    style={{
+                      padding: '1rem',
+                      border: '2px solid rgba(229, 231, 235, 0.5)',
+                      borderRadius: '12px',
+                      fontSize: '1rem',
+                      resize: 'vertical',
+                      background: 'rgba(248, 250, 252, 0.5)',
+                      transition: 'all 0.3s ease',
+                      outline: 'none'
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = '#3b82f6'
+                      e.currentTarget.style.background = '#ffffff'
+                      e.currentTarget.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)'
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(229, 231, 235, 0.5)'
+                      e.currentTarget.style.background = 'rgba(248, 250, 252, 0.5)'
+                      e.currentTarget.style.boxShadow = 'none'
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    style={{
+                      background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                      color: '#ffffff',
+                      padding: '1rem 2rem',
+                      border: 'none',
+                      borderRadius: '12px',
+                      fontSize: '1.1rem',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      boxShadow: '0 8px 25px rgba(59, 130, 246, 0.3)',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)'
+                      e.currentTarget.style.boxShadow = '0 12px 35px rgba(59, 130, 246, 0.4)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)'
+                      e.currentTarget.style.boxShadow = '0 8px 25px rgba(59, 130, 246, 0.3)'
+                    }}
+                  >
+                    送信する
+                  </button>
+                </form>
+                  </div>
+                </div>
+          </section>
+
+          {/* 運営者情報 セクション */}
+          <section id="company-info" style={{
+            padding: '6rem 0',
+            background: '#f9fafb',
+            borderTop: '1px solid #e5e7eb'
+          }}>
+            <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+              <h2 style={{ 
+                fontSize: '2.5rem',
+                fontWeight: 'bold',
+                color: '#1f2937',
+                marginBottom: '1rem'
+              }}>
+                運営者情報
+              </h2>
+              <div style={{
+                width: '60px',
+                height: '3px',
+                background: '#3b82f6',
+                margin: '0 auto'
+              }}></div>
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+              gap: '3rem',
+              marginBottom: '4rem'
+            }}>
+              <div style={{
+                padding: '2rem',
+                background: '#ffffff',
+                borderRadius: '12px',
+                border: '1px solid #e5e7eb',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                textAlign: 'center'
+              }}>
+                <div style={{
+                  width: '120px',
+                  height: '120px',
+                  background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                  borderRadius: '50%',
+                  margin: '0 auto 1.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontSize: '2rem',
+                  fontWeight: 'bold'
+                }}>
+                  FH
+                </div>
+                <h3 style={{
+                  fontSize: '1.5rem',
+                  fontWeight: 'bold',
+                  color: '#1f2937',
+                  marginBottom: '0.5rem'
+                }}>
+                  代表者プロフィール
+                </h3>
+                <p style={{
+                  color: '#6b7280',
+                  lineHeight: '1.6',
+                  marginBottom: '1rem'
+                }}>
+                  エンジニアとして10年以上の経験を持ち、Webデザインからシステム開発まで幅広く手がけています。
+                </p>
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem',
+                  fontSize: '0.9rem',
+                  color: '#6b7280'
+                }}>
+                  <div>• フルスタックエンジニア</div>
+                  <div>• フロントエンド開発実績多数</div>
+                  <div>• バックエンド開発経験豊富</div>
+                  <div>• UI/UXデザイン経験豊富</div>
+                  <div>• 3D・インタラクティブ技術</div>
+                </div>
+              </div>
+
+              <div style={{
+                padding: '2rem',
+                background: '#ffffff',
+                borderRadius: '12px',
+                border: '1px solid #e5e7eb',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+              }}>
+                <h3 style={{
+                  fontSize: '1.5rem',
+                  fontWeight: 'bold',
+                  color: '#1f2937',
+                  marginBottom: '1.5rem'
+                }}>
+                  会社情報
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div>
+                    <h4 style={{
+                      color: '#6b7280',
+                      fontSize: '0.9rem',
+                      marginBottom: '0.5rem',
+                      fontWeight: '600'
+                    }}>
+                      会社名
+                    </h4>
+                    <p style={{ 
+                      color: '#1f2937',
+                      fontSize: '1rem'
+                    }}>
+                      Flium
+                    </p>
+                  </div>
+                  <div>
+                    <h4 style={{
+                      color: '#6b7280',
+                      fontSize: '0.9rem',
+                      marginBottom: '0.5rem',
+                      fontWeight: '600'
+                    }}>
+                      設立年月
+                    </h4>
+                    <p style={{ 
+                      color: '#1f2937',
+                      fontSize: '1rem'
+                    }}>
+                      2025年1月
+                    </p>
+                  </div>
+                  <div>
+                    <h4 style={{
+                      color: '#6b7280',
+                      fontSize: '0.9rem',
+                      marginBottom: '0.5rem',
+                      fontWeight: '600'
+                    }}>
+                      所在地
+                    </h4>
+                    <p style={{ 
+                      color: '#1f2937',
+                      fontSize: '1rem'
+                    }}>
+                      東京都
+                    </p>
+                  </div>
+                  <div>
+                    <h4 style={{
+                      color: '#6b7280',
+                      fontSize: '0.9rem',
+                      marginBottom: '0.5rem',
+                      fontWeight: '600'
+                    }}>
+                      事業内容
+                    </h4>
+                    <p style={{ 
+                      color: '#1f2937',
+                      fontSize: '1rem'
+                    }}>
+                      Webデザイン・開発、システム開発、デジタル戦略コンサルティング
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{
+                padding: '2rem',
+                background: '#ffffff',
+                borderRadius: '12px',
+                border: '1px solid #e5e7eb',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+              }}>
+                <h3 style={{
+                  fontSize: '1.5rem',
+                  fontWeight: 'bold',
+                  color: '#1f2937',
+                  marginBottom: '1.5rem'
+                }}>
+                  技術スタック
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div>
+                    <h4 style={{
+                      color: '#6b7280',
+                      fontSize: '0.9rem',
+                      marginBottom: '0.5rem',
+                      fontWeight: '600'
+                    }}>
+                      フロントエンド
+                    </h4>
+                    <div style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '0.5rem'
+                    }}>
+                      <span style={{
+                        background: '#f3f4f6',
+                        color: '#6b7280',
+                        padding: '0.25rem 0.75rem',
+                        borderRadius: '12px',
+                        fontSize: '0.8rem'
+                      }}>
+                        React
+                      </span>
+                      <span style={{
+                        background: '#f3f4f6',
+                        color: '#6b7280',
+                        padding: '0.25rem 0.75rem',
+                        borderRadius: '12px',
+                        fontSize: '0.8rem'
+                      }}>
+                        Next.js
+                      </span>
+                      <span style={{
+                        background: '#f3f4f6',
+                        color: '#6b7280',
+                        padding: '0.25rem 0.75rem',
+                        borderRadius: '12px',
+                        fontSize: '0.8rem'
+                      }}>
+                        TypeScript
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 style={{
+                      color: '#6b7280',
+                      fontSize: '0.9rem',
+                      marginBottom: '0.5rem',
+                      fontWeight: '600'
+                    }}>
+                      バックエンド
+                    </h4>
+                    <div style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '0.5rem'
+                    }}>
+                      <span style={{
+                        background: '#f3f4f6',
+                        color: '#6b7280',
+                        padding: '0.25rem 0.75rem',
+                        borderRadius: '12px',
+                        fontSize: '0.8rem'
+                      }}>
+                        Node.js
+                      </span>
+                      <span style={{
+                        background: '#f3f4f6',
+                        color: '#6b7280',
+                        padding: '0.25rem 0.75rem',
+                        borderRadius: '12px',
+                        fontSize: '0.8rem'
+                      }}>
+                        Python
+                      </span>
+                      <span style={{
+                        background: '#f3f4f6',
+                        color: '#6b7280',
+                        padding: '0.25rem 0.75rem',
+                        borderRadius: '12px',
+                        fontSize: '0.8rem'
+                      }}>
+                        PostgreSQL
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 style={{
+                      color: '#6b7280',
+                      fontSize: '0.9rem',
+                      marginBottom: '0.5rem',
+                      fontWeight: '600'
+                    }}>
+                      3D・グラフィックス
+                    </h4>
+                    <div style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '0.5rem'
+                    }}>
+                      <span style={{
+                        background: '#f3f4f6',
+                        color: '#6b7280',
+                        padding: '0.25rem 0.75rem',
+                        borderRadius: '12px',
+                        fontSize: '0.8rem'
+                      }}>
+                        Three.js
+                      </span>
+                      <span style={{
+                        background: '#f3f4f6',
+                        color: '#6b7280',
+                        padding: '0.25rem 0.75rem',
+                        borderRadius: '12px',
+                        fontSize: '0.8rem'
+                      }}>
+                        WebGL
+                      </span>
+                      <span style={{
+                        background: '#f3f4f6',
+                        color: '#6b7280',
+                        padding: '0.25rem 0.75rem',
+                        borderRadius: '12px',
+                        fontSize: '0.8rem'
+                      }}>
+                        Blender
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </section>
 
-          {/* Blog/News セクション */}
-          <BlogSection />
+          {/* ブログ セクション */}
+          <section id="blog" style={{
+            padding: '6rem 0',
+            background: '#ffffff',
+            borderTop: '1px solid #e5e7eb'
+          }}>
+            <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+              <h2 style={{ 
+                fontSize: '2.5rem',
+                fontWeight: 'bold',
+                color: '#1f2937',
+                marginBottom: '1rem'
+              }}>
+                ブログ
+              </h2>
+              <div style={{
+                width: '60px',
+                height: '3px',
+                background: '#3b82f6',
+                margin: '0 auto'
+              }}></div>
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
+              gap: '2rem',
+              marginBottom: '3rem'
+            }}>
+              <div style={{
+                padding: '2rem',
+                background: '#f9fafb',
+                borderRadius: '12px',
+                border: '1px solid #e5e7eb',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+              }}>
+                <div style={{
+                  background: '#3b82f6',
+                  color: 'white',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '20px',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  display: 'inline-block',
+                  marginBottom: '1rem'
+                }}>
+                  技術記事
+                </div>
+                <h3 style={{
+                  fontSize: '1.3rem',
+                  fontWeight: 'bold',
+                  color: '#1f2937',
+                  marginBottom: '1rem',
+                  lineHeight: '1.4'
+                }}>
+                  Next.js 14の新機能とパフォーマンス最適化のベストプラクティス
+                </h3>
+                <p style={{
+                  color: '#6b7280',
+                  lineHeight: '1.6',
+                  marginBottom: '1rem',
+                  fontSize: '0.9rem'
+                }}>
+                  Next.js 14で導入された新機能について詳しく解説し、実際のプロジェクトでのパフォーマンス最適化手法を紹介します。
+                </p>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '0.8rem',
+                  color: '#9ca3af'
+                }}>
+                  <span>2024年1月15日</span>
+                  <span>5分で読める</span>
+                </div>
+              </div>
+
+              <div style={{
+                padding: '2rem',
+                background: '#f9fafb',
+                borderRadius: '12px',
+                border: '1px solid #e5e7eb',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+              }}>
+                <div style={{
+                  background: '#10b981',
+                  color: 'white',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '20px',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  display: 'inline-block',
+                  marginBottom: '1rem'
+                }}>
+                  デザイン
+                </div>
+                <h3 style={{
+                  fontSize: '1.3rem',
+                  fontWeight: 'bold',
+                  color: '#1f2937',
+                  marginBottom: '1rem',
+                  lineHeight: '1.4'
+                }}>
+                  UI/UXデザインでユーザー体験を向上させる5つのポイント
+                </h3>
+                <p style={{
+                  color: '#6b7280',
+                  lineHeight: '1.6',
+                  marginBottom: '1rem',
+                  fontSize: '0.9rem'
+                }}>
+                  ユーザー中心のデザイン思考に基づき、実際のプロジェクトで効果的だったUI/UX改善手法をまとめました。
+                </p>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '0.8rem',
+                  color: '#9ca3af'
+                }}>
+                  <span>2024年1月10日</span>
+                  <span>7分で読める</span>
+                </div>
+              </div>
+
+              <div style={{
+                padding: '2rem',
+                background: '#f9fafb',
+                borderRadius: '12px',
+                border: '1px solid #e5e7eb',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+              }}>
+                <div style={{
+                  background: '#f59e0b',
+                  color: 'white',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '20px',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  display: 'inline-block',
+                  marginBottom: '1rem'
+                }}>
+                  3D・WebGL
+                </div>
+                <h3 style={{
+                  fontSize: '1.3rem',
+                  fontWeight: 'bold',
+                  color: '#1f2937',
+                  marginBottom: '1rem',
+                  lineHeight: '1.4'
+                }}>
+                  Three.jsで作るインタラクティブな3D Webサイトの作り方
+                </h3>
+                <p style={{
+                  color: '#6b7280',
+                  lineHeight: '1.6',
+                  marginBottom: '1rem',
+                  fontSize: '0.9rem'
+                }}>
+                  Three.jsを使った3D Webサイトの開発手法を、実際のコード例とともに詳しく解説します。
+                </p>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '0.8rem',
+                  color: '#9ca3af'
+                }}>
+                  <span>2024年1月5日</span>
+                  <span>10分で読める</span>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ textAlign: 'center' }}>
+              <button style={{
+                background: '#3b82f6',
+                color: '#ffffff',
+                padding: '1rem 2rem',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}>
+                すべての記事を見る
+              </button>
+            </div>
+          </section>
+              </div>
         </div>
-      </div>
-      </main>
-    </>
+      </>
+    )
+  }
+
+  return (
+                <div style={{
+      position: 'fixed',
+                  top: 0,
+                  left: 0,
+      width: '100%',
+      height: '100vh',
+      zIndex: 1000,
+      background: 'linear-gradient(135deg, #0f172a, #1e1b4b, #0f172a)',
+                    display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+                    flexDirection: 'column',
+      transition: 'opacity 1s ease-out',
+      opacity: isTransitioning ? 0 : 1
+    }}>
+      {/* 3D背景シーン（スプラッシュ画面用） */}
+      <Scene3D />
+      
+      {/* スプラッシュ画面のコンテンツ */}
+                  <div style={{
+        position: 'relative',
+        zIndex: 10,
+                display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+        flexDirection: 'column',
+        background: 'rgba(13, 27, 42, 0.3)',
+        padding: '2rem',
+        borderRadius: '20px'
+      }}>
+        <h1 style={{ 
+          fontSize: '4rem', 
+          marginBottom: '1rem', 
+          fontWeight: 'bold',
+                color: '#F0F3F5',
+          textShadow: '0 0 20px rgba(0, 245, 212, 0.3)'
+        }}>
+          Flium
+        </h1>
+                  <p style={{ 
+          fontSize: '1.5rem', 
+          marginBottom: '2rem',
+                    color: '#F0F3F5',
+          textShadow: '0 0 10px rgba(0, 245, 212, 0.2)'
+        }}>
+          デジタルを構成する、新しい元素。
+        </p>
+                    <p style={{ 
+                      fontSize: '1rem',
+          opacity: 0.8,
+          marginBottom: '2rem',
+          color: '#F0F3F5'
+        }}>
+          The Element of Digital Flow.
+        </p>
+        {/* インタラクション案内 */}
+        <div style={{
+          fontSize: '0.9rem',
+          color: '#8E94F2',
+          marginTop: '2rem',
+          opacity: 0.7,
+          animation: 'pulse 2s infinite'
+        }}>
+          タップまたはスクロールでサイトへ
+                  </div>
+                </div>
+              </div>
   )
 }
